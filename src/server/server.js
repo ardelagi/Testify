@@ -7,7 +7,7 @@ const User = require('../schemas/spotifyTrackerSystem');
 const { color, getTimestamp, textEffects } = require('../utils/loggingEffects');
 
 const app = express();
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 3005;
 
 app.use((req, res, next) => {
     res.setHeader('ngrok-skip-browser-warning', '*');
