@@ -4,7 +4,7 @@ const SetupChannel = require('../../schemas/aiChannelSystem');
 const filter = require('../../jsons/filter.json');
 
 module.exports = {
-    underDevelopment: true,
+    underDevelopment: false,
     usableInDms: false,
     category: 'AI Commands',
     data: new SlashCommandBuilder()
