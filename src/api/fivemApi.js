@@ -145,7 +145,13 @@ class FiveMAPI {
         const data = this.getFromCache(serverId);
         const players = data.playersList || [];
         
-        // Calculate ping stats
+        // Determine server status berdasarkan player count
+        let serverStatus = data.status;
+        if (data.clients < 10 && data.status !== 'offline') {
+            serverStatus = 'maintenance'; // atau 'low-population'
+        }
+        
+        // Calculate ping stats (min/max/avg)
         let pingStats = { min: "N/A", max: "N/A", avg: "N/A" };
         if (players.length > 0) {
             const pings = players.map(p => p.ping).filter(p => typeof p === "number" && p > 0);
@@ -156,11 +162,12 @@ class FiveMAPI {
             }
         }
 
-        // Top players
+        // Top 3 players berdasarkan join order (ID terendah = join pertama)
         const topPlayers = players
+            .sort((a, b) => (a.id || 999) - (b.id || 999)) // sort by ID ascending
             .slice(0, 3)
             .map(p => p.name || "Unknown")
-            .filter(name => name.length > 0);
+            .filter(name => name.length > 0 && name !== "Unknown");
 
         return {
             hostname: data.hostname,
@@ -168,8 +175,7 @@ class FiveMAPI {
             maxPlayers: data.maxPlayers,
             ping: pingStats,
             topPlayers: topPlayers.length > 0 ? topPlayers : ["None"],
-            resources: data.resources.length,
-            status: data.status,
+            status: serverStatus,
             uptime: Math.floor((Date.now() - data.lastUpdate) / 1000)
         };
     }
