@@ -1,23 +1,24 @@
-const { Events, ActivityType } = require("discord.js");
-const FiveMAPI = require("../../api/fivemApi");
+const { Events, ActivityType } = require('discord.js');
+const FiveMAPI = require('../../api/fivemApi');
 
-const SERVER_DOMAIN = "main.motionliferp.com:30120"; // server domain
+const SERVER_DOMAIN = "main.motionliferp.com:30120"; // langsung pakai domain server
 
 module.exports = {
     name: Events.ClientReady,
     async execute(client) {
-        client.logs.info(`[RPC_STATUS] Setting rotating server info...`);
+
+        client.logs.info(`[RPC_STATUS] Starting rotating server info presence...`);
 
         const updatePresence = async () => {
             try {
-                const data = await FiveMAPI.fetchServer(SERVER_DOMAIN);
+                const data = await FiveMAPI.getAll(SERVER_DOMAIN);
 
                 let activities = [];
 
                 if (data) {
-                    const players = data.players || [];
-                    const playerCount = data.clients || 0;
-                    const maxPlayers = data.sv_maxclients || 0;
+                    const players = data.playersList || [];
+                    const playerCount = data.players || 0;
+                    const maxPlayers = data.maxPlayers || 0;
 
                     // Ping range
                     let pingLow = "N/A";
@@ -40,13 +41,13 @@ module.exports = {
                         { type: ActivityType.Playing, name: `${data.hostname || "Unknown Server"}` },
                     ];
                 } else {
-                    // fallback jika fetch gagal
                     activities = [
                         { type: ActivityType.Watching, name: `Server Offline` },
                     ];
                 }
 
                 const status = activities[Math.floor(Math.random() * activities.length)];
+
                 await client.user.setPresence({
                     activities: [{ name: status.name, type: status.type }],
                 });
@@ -55,12 +56,10 @@ module.exports = {
             }
         };
 
-        // update pertama langsung
-        await updatePresence();
-
-        // update setiap 10 detik
+        // Update presence setiap 10 detik
+        updatePresence(); // langsung jalan sekali saat ready
         setInterval(updatePresence, 10_000);
 
-        client.logs.success(`[RPC_STATUS] Rotating server info loaded successfully.`);
-    },
+        client.logs.success(`[RPC_STATUS] Rotating server info presence loaded successfully.`);
+    }
 };
