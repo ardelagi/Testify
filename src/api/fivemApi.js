@@ -4,42 +4,45 @@ const { color, getTimestamp } = require("../utils/loggingEffects");
 class FiveMAPI {
     constructor() {
         this.baseUrl = "https://servers-frontend.fivem.net/api/servers/single";
-        this.rateLimiter = {
-            lastCalls: {},
-            minInterval: 5000, // minimal jeda 5 detik antar call
-        };
-    }
-
-    canCall(serverId) {
-        const now = Date.now();
-        const last = this.rateLimiter.lastCalls[serverId] || 0;
-        if (now - last < this.rateLimiter.minInterval) {
-            console.warn(`${color.yellow}[${getTimestamp()}] [FIVEM_API] Rate limited: ${serverId}${color.reset}`);
-            return false;
-        }
-        this.rateLimiter.lastCalls[serverId] = now;
-        return true;
+        this.cache = {}; // cache per serverId
+        this.cacheTTL = 5000; // 5 detik
     }
 
     async fetchServer(serverId) {
-        if (!this.canCall(serverId)) return null;
-        const url = `${this.baseUrl}/${serverId}`;
+        const now = Date.now();
 
+        // kalau masih ada di cache, gunakan itu
+        if (this.cache[serverId] && (now - this.cache[serverId].timestamp < this.cacheTTL)) {
+            return this.cache[serverId].data;
+        }
+
+        const url = `${this.baseUrl}/${serverId}`;
         try {
-            const response = await fetch(url);
+            const response = await fetch(url, {
+                headers: {
+                    "User-Agent": "DiscordBot/1.0 (contact: youremail@domain.com)"
+                }
+            });
+
             if (!response.ok) {
                 console.error(`${color.red}[${getTimestamp()}] [FIVEM_API] HTTP ${response.status}${color.reset}`);
                 return null;
             }
+
             const data = await response.json();
-            return data?.Data || null;
+            this.cache[serverId] = { data: data?.Data || null, timestamp: now };
+            return this.cache[serverId].data;
+
         } catch (err) {
             console.error(`${color.red}[${getTimestamp()}] [FIVEM_API] Fetch error: ${err.message}${color.reset}`);
             return null;
         }
     }
 
-    // 📌 Info dasar
+    async getAll(serverId) {
+        return await this.fetchServer(serverId);
+    }
+
     async getBasicInfo(serverId) {
         const data = await this.fetchServer(serverId);
         if (!data) return null;
@@ -52,7 +55,6 @@ class FiveMAPI {
         };
     }
 
-    // 📌 Player list
     async getPlayers(serverId, limit = 30) {
         const data = await this.fetchServer(serverId);
         if (!data) return [];
@@ -63,21 +65,18 @@ class FiveMAPI {
         }));
     }
 
-    // 📌 Resource list
     async getResources(serverId, limit = 50) {
         const data = await this.fetchServer(serverId);
         if (!data) return [];
         return data.resources ? data.resources.slice(0, limit) : [];
     }
 
-    // 📌 Vars (custom variable dari server.cfg)
     async getVariables(serverId) {
         const data = await this.fetchServer(serverId);
         if (!data) return {};
         return data.vars || {};
     }
 
-    // 📌 Performance (ping, up time, dll)
     async getPerformance(serverId) {
         const data = await this.fetchServer(serverId);
         if (!data) return {};
