@@ -3,7 +3,7 @@ const { color, getTimestamp } = require("../utils/loggingEffects");
 
 class FiveMAPI {
     constructor() {
-        this.baseUrl = "https://api.cfx.re/servers/single";
+        this.baseUrl = "https://servers-frontend.fivem.net/api/servers/single";
         this.rateLimiter = {
             lastCalls: {},
             minInterval: 5000, // minimal jeda 5 detik antar call
