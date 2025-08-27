@@ -1,65 +1,49 @@
-const { Events, ActivityType } = require('discord.js');
-const FiveMAPI = require('../../api/fivemApi');
-
-const SERVER_DOMAIN = "main.motionliferp.com:30120"; // langsung pakai domain server
+const { Events, ActivityType } = require("discord.js");
+const FiveMAPI = require("../../api/fivemApi");
 
 module.exports = {
     name: Events.ClientReady,
     async execute(client) {
-
-        client.logs.info(`[RPC_STATUS] Starting rotating server info presence...`);
+        client.logs.info(`[RPC_STATUS] Setting rotating FiveM server info...`);
 
         const updatePresence = async () => {
             try {
-                const data = await FiveMAPI.getAll(SERVER_DOMAIN);
+                const data = await FiveMAPI.getAll();
+                if (!data) return;
 
-                let activities = [];
+                const players = data.players || [];
 
-                if (data) {
-                    const players = data.playersList || [];
-                    const playerCount = data.players || 0;
-                    const maxPlayers = data.maxPlayers || 0;
+                // Ping min & max
+                const pings = players.map(p => p.ping).sort((a, b) => a - b);
+                const minPing = pings[0] ?? 0;
+                const maxPing = pings[pings.length - 1] ?? 0;
 
-                    // Ping range
-                    let pingLow = "N/A";
-                    let pingHigh = "N/A";
-                    if (players.length > 0) {
-                        const pings = players.map(p => p.ping).filter(p => typeof p === "number");
-                        if (pings.length > 0) {
-                            pingLow = Math.min(...pings);
-                            pingHigh = Math.max(...pings);
-                        }
-                    }
+                // Top 2 player
+                const topPlayers = players.slice(0, 2).map(p => `${p.name} (${p.ping}ms)`).join(", ") || "No players online";
 
-                    // Top 2 player
-                    const topPlayers = players.slice(0, 2).map(p => p.name);
-
-                    activities = [
-                        { type: ActivityType.Watching, name: `Players: ${playerCount}/${maxPlayers}` },
-                        { type: ActivityType.Watching, name: `Ping: ${pingLow}-${pingHigh} ms` },
-                        { type: ActivityType.Watching, name: `Top: ${topPlayers.join(", ") || "None"}` },
-                        { type: ActivityType.Playing, name: `${data.hostname || "Unknown Server"}` },
-                    ];
-                } else {
-                    activities = [
-                        { type: ActivityType.Watching, name: `Server Offline` },
-                    ];
-                }
+                const activities = [
+                    { type: "Watching", name: `${data.hostname} | ${players.length}/${data.sv_maxclients} players` },
+                    { type: "Watching", name: `Ping: ${minPing}ms - ${maxPing}ms` },
+                    { type: "Watching", name: `Top 2: ${topPlayers}` },
+                    { type: "Playing", name: `${client.config.prefix}help | @${client.user.username}` },
+                ];
 
                 const status = activities[Math.floor(Math.random() * activities.length)];
 
-                await client.user.setPresence({
-                    activities: [{ name: status.name, type: status.type }],
+                client.user.setPresence({
+                    activities: [{ name: status.name, type: ActivityType[status.type] }],
                 });
             } catch (err) {
-                console.error(`[RPC_STATUS] Error updating presence:`, err);
+                client.logs.error(`[RPC_STATUS] Error updating presence: ${err.message}`);
             }
         };
 
-        // Update presence setiap 10 detik
-        updatePresence(); // langsung jalan sekali saat ready
-        setInterval(updatePresence, 10_000);
+        // Update pertama langsung
+        await updatePresence();
 
-        client.logs.success(`[RPC_STATUS] Rotating server info presence loaded successfully.`);
-    }
+        // Update tiap 10 detik
+        setInterval(updatePresence, 5_000);
+
+        client.logs.success(`[RPC_STATUS] Rotating FiveM server info loaded successfully.`);
+    },
 };
