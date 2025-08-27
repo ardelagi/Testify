@@ -43,27 +43,16 @@ module.exports = {
                     // Format ping info (min-max | avg)
                     let pingInfo = "No ping data";
                     if (stats.ping.min !== "N/A") {
-                        pingInfo = `${stats.ping.min}-${stats.ping.max}ms | ${stats.ping.avg}ms avg`;
+                        pingInfo = `Ping: low ${stats.ping.min} | high ${stats.ping.max}ms | avg ${stats.ping.avg}ms`;
                     }
                     
                     const topPlayersText = stats.topPlayers.length > 0 ? stats.topPlayers.join(", ") : "Waiting for players";
                     
                     activities = [
-                        { type: ActivityType.Watching, name: `🟢 ${stats.hostname}` },
-                        { type: ActivityType.Playing, name: `with ${playerInfo}` },
-                        { type: ActivityType.Watching, name: `📡 ${pingInfo}` },
-                        { type: ActivityType.Watching, name: `👑 First joined: ${topPlayersText}` },
-                        { type: ActivityType.Listening, name: `to ${stats.playerCount} voices` },
+                        { type: ActivityType.Playing, name: `${playerInfo} on Motionlife Roleplay` },
+                        { type: ActivityType.Watching, name: `${pingInfo}` },
+                        { type: ActivityType.Watching, name: `Top 3 ${topPlayersText}` },
                     ];
-
-                    // Tambah aktivitas khusus berdasarkan kondisi
-                    if (stats.playerCount >= 10 && stats.playerCount < 30) {
-                        activities.push({ type: ActivityType.Watching, name: `🌱 Growing community!` });
-                    } else if (stats.playerCount >= 30 && stats.playerCount < 60) {
-                        activities.push({ type: ActivityType.Watching, name: `⚡ Active server!` });
-                    } else if (stats.playerCount >= 60) {
-                        activities.push({ type: ActivityType.Watching, name: `🔥 Bustling with life!` });
-                    }
                 }
 
                 // Rotate activities
@@ -104,7 +93,7 @@ module.exports = {
 
         // Update presence setiap 15 detik (lebih lambat dari fetch cycle)
         updatePresence();
-        const presenceInterval = setInterval(updatePresence, 15_000);
+        const presenceInterval = setInterval(updatePresence, 5_000);
 
         // Cleanup saat bot shutdown
         process.on('SIGINT', () => {
@@ -112,8 +101,5 @@ module.exports = {
             FiveMAPI.destroy();
             client.logs.info(`[RPC_STATUS] Presence updates stopped`);
         });
-
-        client.logs.success(`[RPC_STATUS] ✓ FiveM presence loaded with smart caching!`);
-        client.logs.info(`[RPC_STATUS] Rotation: Every 15s | Data refresh: Every 30s`);
     }
 };
