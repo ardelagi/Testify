@@ -5,10 +5,10 @@ class FiveMAPI {
     constructor() {
         this.baseUrl = "https://servers-frontend.fivem.net/api/servers/single";
         this.streamUrl = "https://servers-frontend.fivem.net/api/servers/stream/";
-        this.joinUrl = "https://api.cfx.re/join"; // fallback terakhir
+        this.joinUrl = "https://servers-frontend.fivem.net/api/servers/join"; // ✅ pakai endpoint baru
         this.rateLimiter = {
             lastCalls: {},
-            minInterval: 5000, // minimal jeda 5 detik antar call
+            minInterval: 5000,
         };
     }
 
@@ -99,12 +99,12 @@ class FiveMAPI {
             }
 
             const data = await response.json();
-            console.log(`${color.green}[${getTimestamp()}] [FIVEM_API] Found server ${serverId} via cfx.re/join${color.reset}`);
+            console.log(`${color.green}[${getTimestamp()}] [FIVEM_API] Found server ${serverId} via servers/join${color.reset}`);
             
-            // adaptasi supaya mirip structure Data
+            // adaptasi biar konsisten
             return {
                 hostname: data.Data?.hostname || "Unknown",
-                connectEndPoints: [data.EndPoint],
+                connectEndPoints: data.EndPoint ? [data.EndPoint] : [],
                 sv_maxclients: data.Data?.sv_maxclients || 0,
                 clients: data.Data?.clients || 0,
                 vars: data.Data?.vars || {},
