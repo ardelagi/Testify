@@ -3,12 +3,10 @@ const { color, getTimestamp } = require("../utils/loggingEffects");
 
 class FiveMAPI {
     constructor() {
-        this.baseUrl = "https://servers-frontend.fivem.net/api/servers/single";
-        this.streamUrl = "https://servers-frontend.fivem.net/api/servers/stream/";
-        this.joinUrl = "https://servers-frontend.fivem.net/api/servers/join"; // ✅ pakai endpoint baru
+        this.serverDomain = "main.motionliferp.com:30120"; // direct connect domain
         this.rateLimiter = {
             lastCalls: {},
-            minInterval: 5000,
+            minInterval: 5000, 
         };
     }
 
@@ -25,172 +23,79 @@ class FiveMAPI {
 
     async fetchServer(serverId) {
         if (!this.canCall(serverId)) return null;
-        const url = `${this.baseUrl}/${serverId}`;
 
         try {
-            const response = await fetch(url, {
-                headers: {
-                    "User-Agent": "Mozilla/5.0",
-                    "Accept": "application/json, text/plain, */*",
-                },
-            });
+            const dynamicRes = await fetch(`http://${this.serverDomain}/dynamic.json`);
+            const playersRes = await fetch(`http://${this.serverDomain}/players.json`);
 
-            if (response.status === 403) {
-                console.warn(`${color.yellow}[${getTimestamp()}] [FIVEM_API] 403 on single/${serverId}, trying stream...${color.reset}`);
-                return await this.fetchFromStream(serverId);
-            }
+            const dynamicData = dynamicRes.ok ? await dynamicRes.json() : {};
+            const playersData = playersRes.ok ? await playersRes.json() : [];
 
-            if (!response.ok) {
-                console.error(`${color.red}[${getTimestamp()}] [FIVEM_API] HTTP ${response.status}${color.reset}`);
-                return null;
-            }
-
-            const data = await response.json();
-            return data?.Data || null;
-        } catch (err) {
-            console.error(`${color.red}[${getTimestamp()}] [FIVEM_API] Fetch error: ${err.message}${color.reset}`);
-            return null;
-        }
-    }
-
-    async fetchFromStream(serverId) {
-        try {
-            const response = await fetch(this.streamUrl, {
-                headers: {
-                    "User-Agent": "Mozilla/5.0",
-                    "Accept": "application/json, text/plain, */*",
-                },
-            });
-
-            if (response.status === 403) {
-                console.warn(`${color.yellow}[${getTimestamp()}] [FIVEM_API] Stream also 403, trying join/${serverId}...${color.reset}`);
-                return await this.fetchFromJoin(serverId);
-            }
-
-            if (!response.ok) {
-                console.error(`${color.red}[${getTimestamp()}] [FIVEM_API] Stream HTTP ${response.status}${color.reset}`);
-                return null;
-            }
-
-            const servers = await response.json();
-            const match = servers.find(s => s.Data?.server === serverId);
-            if (!match) {
-                console.warn(`${color.yellow}[${getTimestamp()}] [FIVEM_API] Server ${serverId} not found in stream${color.reset}`);
-                return null;
-            }
-
-            console.log(`${color.green}[${getTimestamp()}] [FIVEM_API] Found server ${serverId} via stream${color.reset}`);
-            return match.Data;
-        } catch (err) {
-            console.error(`${color.red}[${getTimestamp()}] [FIVEM_API] Stream fetch error: ${err.message}${color.reset}`);
-            return null;
-        }
-    }
-
-    async fetchFromJoin(serverId) {
-        try {
-            const response = await fetch(`${this.joinUrl}/${serverId}`, {
-                headers: { "User-Agent": "Mozilla/5.0" },
-            });
-
-            if (!response.ok) {
-                console.error(`${color.red}[${getTimestamp()}] [FIVEM_API] Join HTTP ${response.status}${color.reset}`);
-                return null;
-            }
-
-            const data = await response.json();
-            console.log(`${color.green}[${getTimestamp()}] [FIVEM_API] Found server ${serverId} via servers/join${color.reset}`);
-            
-            // adaptasi biar konsisten
             return {
-                hostname: data.Data?.hostname || "Unknown",
-                connectEndPoints: data.EndPoint ? [data.EndPoint] : [],
-                sv_maxclients: data.Data?.sv_maxclients || 0,
-                clients: data.Data?.clients || 0,
-                vars: data.Data?.vars || {},
-                players: data.Data?.players || [],
-                resources: data.Data?.resources || [],
+                hostname: dynamicData.hostname || "Unknown",
+                maxPlayers: parseInt(dynamicData.sv_maxclients || 0, 10),
+                clients: parseInt(dynamicData.clients || playersData.length, 10),
+                players: playersData.map(p => ({
+                    id: p.id,
+                    name: p.name,
+                    ping: p.ping
+                })),
+                resources: [], 
+                vars: {}, 
             };
         } catch (err) {
-            console.error(`${color.red}[${getTimestamp()}] [FIVEM_API] Join fetch error: ${err.message}${color.reset}`);
+            console.error(`${color.red}[${getTimestamp()}] [FIVEM_API] Direct connect fetch error: ${err.message}${color.reset}`);
             return null;
         }
     }
 
-    // 📌 Info dasar
     async getBasicInfo(serverId) {
         const data = await this.fetchServer(serverId);
         if (!data) return null;
         return {
             hostname: data.hostname,
-            description: data.vars?.sv_projectDesc || "No description",
-            ip: data.connectEndPoints ? data.connectEndPoints[0] : null,
-            maxPlayers: data.sv_maxclients,
+            maxPlayers: data.maxPlayers,
             players: data.clients,
         };
     }
 
-    // 📌 Player list
-    async getPlayers(serverId, limit = 30) {
+    async getPlayers(serverId) {
         const data = await this.fetchServer(serverId);
         if (!data) return [];
-        return data.players.slice(0, limit).map((p) => ({
-            id: p.id,
-            name: p.name,
-            ping: p.ping,
-        }));
+        return data.players; 
     }
 
-    // 📌 Resource list
     async getResources(serverId, limit = 50) {
-        const data = await this.fetchServer(serverId);
-        if (!data) return [];
-        return data.resources ? data.resources.slice(0, limit) : [];
+        return [];
     }
 
-    // 📌 Vars (custom variable dari server.cfg)
     async getVariables(serverId) {
-        const data = await this.fetchServer(serverId);
-        if (!data) return {};
-        return data.vars || {};
+        return {};
     }
 
-    // 📌 Performance (ping, up time, dll)
     async getPerformance(serverId) {
         const data = await this.fetchServer(serverId);
         if (!data) return {};
         return {
-            upvotePower: data.upvotePower,
-            ownerID: data.ownerID,
-            fallback: data.fallback,
-            enhancedHostSupport: data.enhancedHostSupport,
-            supportStatus: data.support_status,
-            lastSeen: data.lastSeen,
+            onlinePlayers: data.clients,
+            maxPlayers: data.maxPlayers
         };
     }
 
-    // 📌 Gabung semua data jadi satu
     async getAll(serverId) {
         const data = await this.fetchServer(serverId);
         if (!data) return null;
-
         return {
             hostname: data.hostname,
-            description: data.vars?.sv_projectDesc || "No description",
-            ip: data.connectEndPoints ? data.connectEndPoints[0] : null,
-            maxPlayers: data.sv_maxclients,
+            maxPlayers: data.maxPlayers,
             players: data.clients,
-            resources: data.resources || [],
-            vars: data.vars || {},
+            playersList: data.players,
+            resources: [],
+            vars: {},
             performance: {
-                upvotePower: data.upvotePower,
-                ownerID: data.ownerID,
-                fallback: data.fallback,
-                enhancedHostSupport: data.enhancedHostSupport,
-                supportStatus: data.support_status,
-                lastSeen: data.lastSeen,
-            },
-            playersList: data.players || [],
+                onlinePlayers: data.clients,
+                maxPlayers: data.maxPlayers
+            }
         };
     }
 }
