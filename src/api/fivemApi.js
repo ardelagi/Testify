@@ -4,6 +4,7 @@ const { color, getTimestamp } = require("../utils/loggingEffects");
 class FiveMAPI {
     constructor() {
         this.baseUrl = "https://servers-frontend.fivem.net/api/servers/single";
+        this.streamUrl = "https://servers-frontend.fivem.net/api/servers/stream/";
         this.rateLimiter = {
             lastCalls: {},
             minInterval: 5000, // minimal jeda 5 detik antar call
@@ -28,14 +29,17 @@ class FiveMAPI {
         try {
             const response = await fetch(url, {
                 headers: {
-                    "User-Agent":
-                        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0 Safari/537.36",
+                    "User-Agent": "Mozilla/5.0",
                     "Accept": "application/json, text/plain, */*",
-                    "Accept-Language": "en-US,en;q=0.9",
-                    "Origin": "https://servers.fivem.net",
-                    "Referer": "https://servers.fivem.net/",
                 },
             });
+
+            if (response.status === 403) {
+                console.warn(
+                    `${color.yellow}[${getTimestamp()}] [FIVEM_API] 403 on single/${serverId}, trying stream...${color.reset}`
+                );
+                return await this.fetchFromStream(serverId);
+            }
 
             if (!response.ok) {
                 console.error(
@@ -49,6 +53,44 @@ class FiveMAPI {
         } catch (err) {
             console.error(
                 `${color.red}[${getTimestamp()}] [FIVEM_API] Fetch error: ${err.message}${color.reset}`
+            );
+            return null;
+        }
+    }
+
+    async fetchFromStream(serverId) {
+        try {
+            const response = await fetch(this.streamUrl, {
+                headers: {
+                    "User-Agent": "Mozilla/5.0",
+                    "Accept": "application/json, text/plain, */*",
+                },
+            });
+
+            if (!response.ok) {
+                console.error(
+                    `${color.red}[${getTimestamp()}] [FIVEM_API] Stream HTTP ${response.status}${color.reset}`
+                );
+                return null;
+            }
+
+            const servers = await response.json();
+            const match = servers.find(s => s.Data?.server === serverId);
+            if (!match) {
+                console.warn(
+                    `${color.yellow}[${getTimestamp()}] [FIVEM_API] Server ${serverId} not found in stream${color.reset}`
+                );
+                return null;
+            }
+
+            console.log(
+                `${color.green}[${getTimestamp()}] [FIVEM_API] Found server ${serverId} via stream${color.reset}`
+            );
+
+            return match.Data;
+        } catch (err) {
+            console.error(
+                `${color.red}[${getTimestamp()}] [FIVEM_API] Stream fetch error: ${err.message}${color.reset}`
             );
             return null;
         }
