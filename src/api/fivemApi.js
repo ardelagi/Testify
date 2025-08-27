@@ -3,92 +3,79 @@ const { color, getTimestamp } = require("../utils/loggingEffects");
 
 class FiveMAPI {
     constructor() {
-        this.serverDomain = "main.motionliferp.com:30120"; // domain server FiveM
-        this.baseUrl = `http://${this.serverDomain}`;
+        this.serverDomain = "main.motionliferp.com"; // pakai domain langsung
         this.rateLimiter = {
             lastCalls: {},
-            minInterval: 10_000, // minimal jeda 10 detik antar call
+            minInterval: 15_000, // minimal jeda 15 detik antar fetch per server
         };
+        this.cache = {}; // cache hasil fetch
     }
 
-    canCall(key) {
+    canCall(serverId) {
         const now = Date.now();
-        const last = this.rateLimiter.lastCalls[key] || 0;
+        const last = this.rateLimiter.lastCalls[serverId] || 0;
         if (now - last < this.rateLimiter.minInterval) {
-            console.warn(`${color.yellow}[${getTimestamp()}] [FIVEM_API] Rate limited: ${key}${color.reset}`);
             return false;
         }
-        this.rateLimiter.lastCalls[key] = now;
+        this.rateLimiter.lastCalls[serverId] = now;
         return true;
     }
 
-    async fetchJSON(endpoint) {
-        if (!this.canCall(endpoint)) return null;
+    async fetchServer(serverId) {
+        if (!this.canCall(serverId) && this.cache[serverId]) {
+            return this.cache[serverId];
+        }
+
         try {
-            const res = await fetch(`${this.baseUrl}/${endpoint}`, { timeout: 5000 });
-            if (!res.ok) throw new Error(`HTTP ${res.status}`);
-            return await res.json();
+            const url = `http://${serverId}:30120/dynamic.json`;
+            const response = await fetch(url, { timeout: 5000 });
+            if (!response.ok) throw new Error(`HTTP ${response.status}`);
+            const data = await response.json();
+
+            // fetch players
+            let players = [];
+            try {
+                const pResp = await fetch(`http://${serverId}:30120/players.json`, { timeout: 5000 });
+                if (pResp.ok) players = await pResp.json();
+            } catch {}
+
+            const serverData = {
+                hostname: data.hostname || "Unknown",
+                maxPlayers: parseInt(data.sv_maxclients) || 0,
+                clients: data.clients || 0,
+                playersList: players || [],
+                resources: data.resources || [],
+                vars: data.vars || {},
+                ping: data.ping || 0,
+            };
+
+            this.cache[serverId] = serverData;
+            return serverData;
+
         } catch (err) {
-            console.error(`${color.red}[${getTimestamp()}] [FIVEM_API] Direct connect fetch error: request to ${this.baseUrl}/${endpoint} failed, reason: ${err.message}${color.reset}`);
-            return null;
+            console.warn(`${color.yellow}[${getTimestamp()}] [FIVEM_API] Direct connect fetch error: ${err.message}${color.reset}`);
+            return this.cache[serverId] || null;
         }
     }
 
-    async fetchServer() {
-        // Ambil dynamic.json dulu
-        const dynamicData = await this.fetchJSON("dynamic.json");
-        if (!dynamicData) return null;
-
-        // Ambil players.json, fallback ke array kosong jika gagal
-        const playersData = await this.fetchJSON("players.json") || [];
-
-        return {
-            hostname: dynamicData.hostname || "Unknown",
-            sv_maxclients: Number(dynamicData.sv_maxclients) || 0,
-            clients: Number(dynamicData.clients) || 0,
-            players: playersData.map(p => ({
-                id: p.id,
-                name: p.name,
-                ping: p.ping,
-            })),
-            resources: [], // optional, bisa diisi manual kalau server expose
-            vars: dynamicData.vars || {},
-            lastSeen: Date.now(),
-            connectEndPoints: [`${this.serverDomain}`],
-        };
+    async getAll(serverId) {
+        return await this.fetchServer(serverId);
     }
 
-    async getBasicInfo() {
-        const data = await this.fetchServer();
+    async getPlayers(serverId) {
+        const data = await this.fetchServer(serverId);
+        return data?.playersList || [];
+    }
+
+    async getBasicInfo(serverId) {
+        const data = await this.fetchServer(serverId);
         if (!data) return null;
         return {
             hostname: data.hostname,
-            ip: data.connectEndPoints[0],
-            maxPlayers: data.sv_maxclients,
+            maxPlayers: data.maxPlayers,
             players: data.clients,
+            ip: serverId,
         };
-    }
-
-    async getPlayers() {
-        const data = await this.fetchServer();
-        if (!data) return [];
-        return data.players;
-    }
-
-    async getResources() {
-        const data = await this.fetchServer();
-        if (!data) return [];
-        return data.resources;
-    }
-
-    async getVariables() {
-        const data = await this.fetchServer();
-        if (!data) return {};
-        return data.vars;
-    }
-
-    async getAll() {
-        return await this.fetchServer();
     }
 }
 
