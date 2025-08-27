@@ -105,6 +105,31 @@ class FiveMAPI {
             lastSeen: data.lastSeen,
         };
     }
+
+    // 📌 Gabung semua data jadi satu
+    async getAll(serverId) {
+        const data = await this.fetchServer(serverId);
+        if (!data) return null;
+
+        return {
+            hostname: data.hostname,
+            description: data.vars?.sv_projectDesc || "No description",
+            ip: data.connectEndPoints ? data.connectEndPoints[0] : null,
+            maxPlayers: data.sv_maxclients,
+            players: data.clients,
+            resources: data.resources || [],
+            vars: data.vars || {},
+            performance: {
+                upvotePower: data.upvotePower,
+                ownerID: data.ownerID,
+                fallback: data.fallback,
+                enhancedHostSupport: data.enhancedHostSupport,
+                supportStatus: data.support_status,
+                lastSeen: data.lastSeen,
+            },
+            playersList: data.players || [],
+        };
+    }
 }
 
 module.exports = new FiveMAPI();
