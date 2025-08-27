@@ -9,15 +9,13 @@ class FiveMAPI {
         this.cacheDuration = 30 * 1000; // cache 30 detik
         this.rateLimiter = {
             lastCall: 0,
-            minInterval: 5000, // minimal jeda 5 detik antar fetch
+            minInterval: 5000,
         };
     }
 
     canCall() {
         const now = Date.now();
-        if (now - this.rateLimiter.lastCall < this.rateLimiter.minInterval) {
-            return false;
-        }
+        if (now - this.rateLimiter.lastCall < this.rateLimiter.minInterval) return false;
         this.rateLimiter.lastCall = now;
         return true;
     }
@@ -25,25 +23,30 @@ class FiveMAPI {
     async fetchDirect() {
         try {
             const now = Date.now();
-            if (this.cache && now - this.cacheTime < this.cacheDuration) {
-                return this.cache;
-            }
+            if (this.cache && now - this.cacheTime < this.cacheDuration) return this.cache;
 
             if (!this.canCall()) return this.cache;
 
-            // ambil dynamic.json
+            const start = Date.now();
             const dynamicRes = await fetch(`http://${this.serverDomain}/dynamic.json`, { timeout: 5000 });
             const dynamic = await dynamicRes.json();
+            const ping = Date.now() - start;
 
-            // ambil players.json
             const playersRes = await fetch(`http://${this.serverDomain}/players.json`, { timeout: 5000 });
             const players = await playersRes.json();
+
+            const topPlayers = (players || [])
+                .sort((a, b) => a.ping - b.ping)
+                .slice(0, 2)
+                .map(p => p.name);
 
             const data = {
                 hostname: dynamic.hostname || "Unknown",
                 maxPlayers: parseInt(dynamic.sv_maxclients) || 0,
                 clients: dynamic.clients || 0,
                 players: players || [],
+                ping,
+                topPlayers,
             };
 
             this.cache = data;
