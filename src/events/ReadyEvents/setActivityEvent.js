@@ -40,7 +40,7 @@ module.exports = {
         };
 
         await updatePresence();
-        setInterval(updatePresence, 5000);
+        setInterval(updatePresence, 5_000);
 
         client.logs.success(`[RPC_STATUS] Rotating FiveM server info presence loaded.`);
     }
