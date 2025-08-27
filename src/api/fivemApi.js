@@ -3,46 +3,58 @@ const { color, getTimestamp } = require("../utils/loggingEffects");
 
 class FiveMAPI {
     constructor() {
-        this.baseUrl = "https://servers-frontend.fivem.net/api/servers/single";
-        this.cache = {}; // cache per serverId
-        this.cacheTTL = 5000; // 5 detik
+        this.baseUrl = "https://api.cfx.re/servers/single";
+        this.rateLimiter = {
+            lastCalls: {},
+            minInterval: 5000, // minimal jeda 5 detik antar call
+        };
+    }
+
+    canCall(serverId) {
+        const now = Date.now();
+        const last = this.rateLimiter.lastCalls[serverId] || 0;
+        if (now - last < this.rateLimiter.minInterval) {
+            console.warn(`${color.yellow}[${getTimestamp()}] [FIVEM_API] Rate limited: ${serverId}${color.reset}`);
+            return false;
+        }
+        this.rateLimiter.lastCalls[serverId] = now;
+        return true;
     }
 
     async fetchServer(serverId) {
-        const now = Date.now();
-
-        // kalau masih ada di cache, gunakan itu
-        if (this.cache[serverId] && (now - this.cache[serverId].timestamp < this.cacheTTL)) {
-            return this.cache[serverId].data;
-        }
-
+        if (!this.canCall(serverId)) return null;
         const url = `${this.baseUrl}/${serverId}`;
+
         try {
             const response = await fetch(url, {
                 headers: {
-                    "User-Agent": "DiscordBot/1.0 (contact: youremail@domain.com)"
-                }
+                    "User-Agent":
+                        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0 Safari/537.36",
+                    "Accept": "application/json, text/plain, */*",
+                    "Accept-Language": "en-US,en;q=0.9",
+                    "Origin": "https://servers.fivem.net",
+                    "Referer": "https://servers.fivem.net/",
+                },
             });
 
             if (!response.ok) {
-                console.error(`${color.red}[${getTimestamp()}] [FIVEM_API] HTTP ${response.status}${color.reset}`);
+                console.error(
+                    `${color.red}[${getTimestamp()}] [FIVEM_API] HTTP ${response.status}${color.reset}`
+                );
                 return null;
             }
 
             const data = await response.json();
-            this.cache[serverId] = { data: data?.Data || null, timestamp: now };
-            return this.cache[serverId].data;
-
+            return data?.Data || null;
         } catch (err) {
-            console.error(`${color.red}[${getTimestamp()}] [FIVEM_API] Fetch error: ${err.message}${color.reset}`);
+            console.error(
+                `${color.red}[${getTimestamp()}] [FIVEM_API] Fetch error: ${err.message}${color.reset}`
+            );
             return null;
         }
     }
 
-    async getAll(serverId) {
-        return await this.fetchServer(serverId);
-    }
-
+    // 📌 Info dasar
     async getBasicInfo(serverId) {
         const data = await this.fetchServer(serverId);
         if (!data) return null;
@@ -55,28 +67,32 @@ class FiveMAPI {
         };
     }
 
+    // 📌 Player list
     async getPlayers(serverId, limit = 30) {
         const data = await this.fetchServer(serverId);
         if (!data) return [];
-        return data.players.slice(0, limit).map(p => ({
+        return data.players.slice(0, limit).map((p) => ({
             id: p.id,
             name: p.name,
-            ping: p.ping
+            ping: p.ping,
         }));
     }
 
+    // 📌 Resource list
     async getResources(serverId, limit = 50) {
         const data = await this.fetchServer(serverId);
         if (!data) return [];
         return data.resources ? data.resources.slice(0, limit) : [];
     }
 
+    // 📌 Vars (custom variable dari server.cfg)
     async getVariables(serverId) {
         const data = await this.fetchServer(serverId);
         if (!data) return {};
         return data.vars || {};
     }
 
+    // 📌 Performance (ping, up time, dll)
     async getPerformance(serverId) {
         const data = await this.fetchServer(serverId);
         if (!data) return {};
