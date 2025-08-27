@@ -5,6 +5,7 @@ class FiveMAPI {
     constructor() {
         this.baseUrl = "https://servers-frontend.fivem.net/api/servers/single";
         this.streamUrl = "https://servers-frontend.fivem.net/api/servers/stream/";
+        this.joinUrl = "https://api.cfx.re/join"; // fallback terakhir
         this.rateLimiter = {
             lastCalls: {},
             minInterval: 5000, // minimal jeda 5 detik antar call
@@ -35,25 +36,19 @@ class FiveMAPI {
             });
 
             if (response.status === 403) {
-                console.warn(
-                    `${color.yellow}[${getTimestamp()}] [FIVEM_API] 403 on single/${serverId}, trying stream...${color.reset}`
-                );
+                console.warn(`${color.yellow}[${getTimestamp()}] [FIVEM_API] 403 on single/${serverId}, trying stream...${color.reset}`);
                 return await this.fetchFromStream(serverId);
             }
 
             if (!response.ok) {
-                console.error(
-                    `${color.red}[${getTimestamp()}] [FIVEM_API] HTTP ${response.status}${color.reset}`
-                );
+                console.error(`${color.red}[${getTimestamp()}] [FIVEM_API] HTTP ${response.status}${color.reset}`);
                 return null;
             }
 
             const data = await response.json();
             return data?.Data || null;
         } catch (err) {
-            console.error(
-                `${color.red}[${getTimestamp()}] [FIVEM_API] Fetch error: ${err.message}${color.reset}`
-            );
+            console.error(`${color.red}[${getTimestamp()}] [FIVEM_API] Fetch error: ${err.message}${color.reset}`);
             return null;
         }
     }
@@ -67,31 +62,57 @@ class FiveMAPI {
                 },
             });
 
+            if (response.status === 403) {
+                console.warn(`${color.yellow}[${getTimestamp()}] [FIVEM_API] Stream also 403, trying join/${serverId}...${color.reset}`);
+                return await this.fetchFromJoin(serverId);
+            }
+
             if (!response.ok) {
-                console.error(
-                    `${color.red}[${getTimestamp()}] [FIVEM_API] Stream HTTP ${response.status}${color.reset}`
-                );
+                console.error(`${color.red}[${getTimestamp()}] [FIVEM_API] Stream HTTP ${response.status}${color.reset}`);
                 return null;
             }
 
             const servers = await response.json();
             const match = servers.find(s => s.Data?.server === serverId);
             if (!match) {
-                console.warn(
-                    `${color.yellow}[${getTimestamp()}] [FIVEM_API] Server ${serverId} not found in stream${color.reset}`
-                );
+                console.warn(`${color.yellow}[${getTimestamp()}] [FIVEM_API] Server ${serverId} not found in stream${color.reset}`);
                 return null;
             }
 
-            console.log(
-                `${color.green}[${getTimestamp()}] [FIVEM_API] Found server ${serverId} via stream${color.reset}`
-            );
-
+            console.log(`${color.green}[${getTimestamp()}] [FIVEM_API] Found server ${serverId} via stream${color.reset}`);
             return match.Data;
         } catch (err) {
-            console.error(
-                `${color.red}[${getTimestamp()}] [FIVEM_API] Stream fetch error: ${err.message}${color.reset}`
-            );
+            console.error(`${color.red}[${getTimestamp()}] [FIVEM_API] Stream fetch error: ${err.message}${color.reset}`);
+            return null;
+        }
+    }
+
+    async fetchFromJoin(serverId) {
+        try {
+            const response = await fetch(`${this.joinUrl}/${serverId}`, {
+                headers: { "User-Agent": "Mozilla/5.0" },
+            });
+
+            if (!response.ok) {
+                console.error(`${color.red}[${getTimestamp()}] [FIVEM_API] Join HTTP ${response.status}${color.reset}`);
+                return null;
+            }
+
+            const data = await response.json();
+            console.log(`${color.green}[${getTimestamp()}] [FIVEM_API] Found server ${serverId} via cfx.re/join${color.reset}`);
+            
+            // adaptasi supaya mirip structure Data
+            return {
+                hostname: data.Data?.hostname || "Unknown",
+                connectEndPoints: [data.EndPoint],
+                sv_maxclients: data.Data?.sv_maxclients || 0,
+                clients: data.Data?.clients || 0,
+                vars: data.Data?.vars || {},
+                players: data.Data?.players || [],
+                resources: data.Data?.resources || [],
+            };
+        } catch (err) {
+            console.error(`${color.red}[${getTimestamp()}] [FIVEM_API] Join fetch error: ${err.message}${color.reset}`);
             return null;
         }
     }
