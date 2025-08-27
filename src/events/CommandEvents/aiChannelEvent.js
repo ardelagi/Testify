@@ -10,7 +10,6 @@ module.exports = {
 
         const botMentioned = message.content.includes(`<@${client.user.id}>`);
 
-        // Aman fetch reference
         let isReplyToBot = false;
         if (message.reference) {
             try {
@@ -25,7 +24,6 @@ module.exports = {
 
         if (!botMentioned && !isReplyToBot) return;
 
-        // Filter kata kasar
         if (filter.words.some(word => message.content.includes(word))) {
             return message.reply({
                 content: `Woah! Your message includes profanity which is **not** allowed! Try sending your message again without using that language.`
@@ -56,10 +54,8 @@ module.exports = {
                 return message.reply('The AI **did not** return a response. Please try again with a different prompt.');
             }
 
-            // Aman replace @here dan @everyone
             chatResponse = chatResponse.replace(/@here/g, '[here]').replace(/@everyone/g, '[everyone]');
 
-            // Truncate jika lebih dari 2000 karakter
             if (chatResponse.length > 1995) {
                 const truncatedResponse = chatResponse.substring(0, 1995) + '...';
                 await message.reply(truncatedResponse);
