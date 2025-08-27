@@ -23,35 +23,46 @@ module.exports = {
                     activities = [
                         { type: ActivityType.Watching, name: `🔴 ${stats.hostname}` },
                         { type: ActivityType.Watching, name: `🔴 Server Offline` },
-                        { type: ActivityType.Watching, name: `🔴 Maintenance Mode` },
+                        { type: ActivityType.Watching, name: `🔴 Try again later` },
+                    ];
+                } else if (stats.status === 'maintenance') {
+                    activities = [
+                        { type: ActivityType.Watching, name: `🟡 ${stats.hostname}` },
+                        { type: ActivityType.Watching, name: `🟡 Low Population (${stats.playerCount}/10+)` },
+                        { type: ActivityType.Watching, name: `🟡 Maintenance/Testing` },
                     ];
                 } else if (stats.status === 'loading') {
                     activities = [
-                        { type: ActivityType.Watching, name: `🟡 Loading server data...` },
-                        { type: ActivityType.Watching, name: `🟡 Connecting to server...` },
+                        { type: ActivityType.Watching, name: `⏳ Loading server data...` },
+                        { type: ActivityType.Watching, name: `⏳ Connecting to server...` },
                     ];
                 } else {
                     // Server online - activities lengkap
                     const playerInfo = `${stats.playerCount}/${stats.maxPlayers} players`;
-                    const pingInfo = stats.ping.avg !== "N/A" ? `${stats.ping.avg}ms avg` : "No ping data";
-                    const topPlayersText = stats.topPlayers.length > 0 ? stats.topPlayers.slice(0, 2).join(", ") : "No players";
+                    
+                    // Format ping info (min-max | avg)
+                    let pingInfo = "No ping data";
+                    if (stats.ping.min !== "N/A") {
+                        pingInfo = `${stats.ping.min}-${stats.ping.max}ms | ${stats.ping.avg}ms avg`;
+                    }
+                    
+                    const topPlayersText = stats.topPlayers.length > 0 ? stats.topPlayers.join(", ") : "Waiting for players";
                     
                     activities = [
                         { type: ActivityType.Watching, name: `🟢 ${stats.hostname}` },
                         { type: ActivityType.Playing, name: `with ${playerInfo}` },
-                        { type: ActivityType.Watching, name: `📊 ${pingInfo} ping` },
-                        { type: ActivityType.Watching, name: `📦 ${stats.resources} resources` },
-                        { type: ActivityType.Watching, name: `👥 ${topPlayersText}` },
+                        { type: ActivityType.Watching, name: `📡 ${pingInfo}` },
+                        { type: ActivityType.Watching, name: `👑 First joined: ${topPlayersText}` },
                         { type: ActivityType.Listening, name: `to ${stats.playerCount} voices` },
                     ];
 
                     // Tambah aktivitas khusus berdasarkan kondisi
-                    if (stats.playerCount === 0) {
-                        activities.push({ type: ActivityType.Watching, name: `🌙 Server is quiet...` });
-                    } else if (stats.playerCount >= stats.maxPlayers * 0.8) {
-                        activities.push({ type: ActivityType.Watching, name: `🔥 Server is busy!` });
-                    } else if (stats.playerCount >= stats.maxPlayers * 0.5) {
-                        activities.push({ type: ActivityType.Watching, name: `⚡ Join the action!` });
+                    if (stats.playerCount >= 10 && stats.playerCount < 30) {
+                        activities.push({ type: ActivityType.Watching, name: `🌱 Growing community!` });
+                    } else if (stats.playerCount >= 30 && stats.playerCount < 60) {
+                        activities.push({ type: ActivityType.Watching, name: `⚡ Active server!` });
+                    } else if (stats.playerCount >= 60) {
+                        activities.push({ type: ActivityType.Watching, name: `🔥 Bustling with life!` });
                     }
                 }
 
@@ -61,7 +72,8 @@ module.exports = {
                     
                     await client.user.setPresence({
                         activities: [activity],
-                        status: stats.status === 'offline' ? 'dnd' : 'online'
+                        status: stats.status === 'offline' ? 'dnd' : 
+                               stats.status === 'maintenance' ? 'idle' : 'online'
                     });
 
                     currentActivityIndex++;
@@ -87,10 +99,12 @@ module.exports = {
             }
         };
 
+        // Initialize FiveM API
         await FiveMAPI.getAll(SERVER_DOMAIN);
 
+        // Update presence setiap 15 detik (lebih lambat dari fetch cycle)
         updatePresence();
-        const presenceInterval = setInterval(updatePresence, 5_000);
+        const presenceInterval = setInterval(updatePresence, 15_000);
 
         // Cleanup saat bot shutdown
         process.on('SIGINT', () => {
