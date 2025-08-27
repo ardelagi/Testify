@@ -3,99 +3,58 @@ const { color, getTimestamp } = require("../utils/loggingEffects");
 
 class FiveMAPI {
     constructor() {
-        this.serverDomain = "main.motionliferp.com:30120"; // direct connect domain
+        this.serverUrl = "http://main.motionliferp.com:30120";
         this.rateLimiter = {
-            lastCalls: {},
-            minInterval: 5000, 
+            lastCall: 0,
+            minInterval: 8000, 
         };
     }
 
-    canCall(serverId) {
+    canCall() {
         const now = Date.now();
-        const last = this.rateLimiter.lastCalls[serverId] || 0;
-        if (now - last < this.rateLimiter.minInterval) {
-            console.warn(`${color.yellow}[${getTimestamp()}] [FIVEM_API] Rate limited: ${serverId}${color.reset}`);
+        if (now - this.rateLimiter.lastCall < this.rateLimiter.minInterval) {
+            console.warn(`${color.yellow}[${getTimestamp()}] [FIVEM_API] Rate limited${color.reset}`);
             return false;
         }
-        this.rateLimiter.lastCalls[serverId] = now;
+        this.rateLimiter.lastCall = now;
         return true;
     }
 
-    async fetchServer(serverId) {
-        if (!this.canCall(serverId)) return null;
-
+    async fetchDynamic() {
+        if (!this.canCall()) return null;
         try {
-            const dynamicRes = await fetch(`http://${this.serverDomain}/dynamic.json`);
-            const playersRes = await fetch(`http://${this.serverDomain}/players.json`);
-
-            const dynamicData = dynamicRes.ok ? await dynamicRes.json() : {};
-            const playersData = playersRes.ok ? await playersRes.json() : [];
-
-            return {
-                hostname: dynamicData.hostname || "Unknown",
-                maxPlayers: parseInt(dynamicData.sv_maxclients || 0, 10),
-                clients: parseInt(dynamicData.clients || playersData.length, 10),
-                players: playersData.map(p => ({
-                    id: p.id,
-                    name: p.name,
-                    ping: p.ping
-                })),
-                resources: [], 
-                vars: {}, 
-            };
+            const res = await fetch(`${this.serverUrl}/dynamic.json`, { timeout: 5000 });
+            if (!res.ok) throw new Error(`HTTP ${res.status}`);
+            return await res.json();
         } catch (err) {
             console.error(`${color.red}[${getTimestamp()}] [FIVEM_API] Direct connect fetch error: ${err.message}${color.reset}`);
             return null;
         }
     }
 
-    async getBasicInfo(serverId) {
-        const data = await this.fetchServer(serverId);
-        if (!data) return null;
+    async fetchPlayers() {
+        if (!this.canCall()) return [];
+        try {
+            const res = await fetch(`${this.serverUrl}/players.json`, { timeout: 5000 });
+            if (!res.ok) throw new Error(`HTTP ${res.status}`);
+            const data = await res.json();
+            return Array.isArray(data) ? data : [];
+        } catch (err) {
+            console.error(`${color.red}[${getTimestamp()}] [FIVEM_API] Direct connect fetch error: ${err.message}${color.reset}`);
+            return [];
+        }
+    }
+
+    async getAll() {
+        const dynamic = await this.fetchDynamic();
+        const players = await this.fetchPlayers();
+
         return {
-            hostname: data.hostname,
-            maxPlayers: data.maxPlayers,
-            players: data.clients,
-        };
-    }
-
-    async getPlayers(serverId) {
-        const data = await this.fetchServer(serverId);
-        if (!data) return [];
-        return data.players; 
-    }
-
-    async getResources(serverId, limit = 50) {
-        return [];
-    }
-
-    async getVariables(serverId) {
-        return {};
-    }
-
-    async getPerformance(serverId) {
-        const data = await this.fetchServer(serverId);
-        if (!data) return {};
-        return {
-            onlinePlayers: data.clients,
-            maxPlayers: data.maxPlayers
-        };
-    }
-
-    async getAll(serverId) {
-        const data = await this.fetchServer(serverId);
-        if (!data) return null;
-        return {
-            hostname: data.hostname,
-            maxPlayers: data.maxPlayers,
-            players: data.clients,
-            playersList: data.players,
-            resources: [],
-            vars: {},
-            performance: {
-                onlinePlayers: data.clients,
-                maxPlayers: data.maxPlayers
-            }
+            hostname: dynamic?.hostname || "Unknown Server",
+            clients: dynamic?.clients || 0,
+            sv_maxclients: dynamic?.sv_maxclients || 0,
+            resources: dynamic?.resources || [],
+            players: players || [],
         };
     }
 }
