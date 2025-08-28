@@ -4,57 +4,109 @@ const fs = require('fs');
 const ascii = require("ascii-table");
 const { color, getTimestamp } = require('../utils/loggingEffects.js');
 
-const table = new ascii().setHeading("File Name", "Status");
+const table = new ascii().setHeading("File Name", "Type", "Status");
 
 const clientId = process.env.clientid; 
 const guildId = process.env.guildid;
-const useGuildCommands = process.env.USE_GUILD_COMMANDS === 'true'; // Add this to .env
+const useGuildCommands = process.env.USE_GUILD_COMMANDS === 'true';
 
 module.exports = (client) => {
     client.handleCommands = async (commandFolders, path) => {
         client.commandArray = [];
-        client.guildCommandArray = []; // For guild-specific commands
-        client.globalCommandArray = []; // For global commands
+        client.guildCommandArray = [];
+        client.globalCommandArray = [];
+
+        // Debug: Log settings
+        console.log(`${color.yellow}[${getTimestamp()}] [DEBUG] USE_GUILD_COMMANDS: ${useGuildCommands}${color.reset}`);
+        console.log(`${color.yellow}[${getTimestamp()}] [DEBUG] GUILD_ID: ${guildId}${color.reset}`);
 
         for (folder of commandFolders) {
             const commandFiles = fs.readdirSync(`${path}/${folder}`).filter(file => file.endsWith('.js'));
+            
             for (const file of commandFiles) {
                 const command = require(`../commands/${folder}/${file}`);
-                client.commands.set(command.data.name, command);
                 
-                // Check if command should be guild-only (you can add a property to commands)
-                if (command.guildOnly || useGuildCommands) {
-                    client.guildCommandArray.push(command.data.toJSON());
-                } else {
-                    client.globalCommandArray.push(command.data.toJSON());
+                if (!command.data || !command.data.name) {
+                    table.addRow(file, "INVALID", "❌");
+                    continue;
                 }
 
+                client.commands.set(command.data.name, command);
+                
+                // ===== PERBAIKAN LOGIC DEPLOYMENT =====
+                let deploymentType = "GLOBAL";
+                let shouldBeGuild = false;
+
+                // 1. Cek jika ada property guildOnly
+                if (command.guildOnly === true) {
+                    shouldBeGuild = true;
+                    deploymentType = "GUILD (guildOnly)";
+                }
+                // 2. Cek USE_GUILD_COMMANDS environment
+                else if (useGuildCommands) {
+                    shouldBeGuild = true;
+                    deploymentType = "GUILD (env)";
+                }
+                // 3. Cek category yang sebaiknya guild-only
+                else if (command.category && [
+                    'AI Commands',
+                    'Admin Commands', 
+                    'Moderation',
+                    'Developer'
+                ].includes(command.category)) {
+                    shouldBeGuild = true;
+                    deploymentType = "GUILD (category)";
+                }
+
+                // Deploy berdasarkan hasil check
+                if (shouldBeGuild && guildId) {
+                    client.guildCommandArray.push(command.data.toJSON());
+                    table.addRow(file, deploymentType, "✅");
+                } else {
+                    client.globalCommandArray.push(command.data.toJSON());
+                    table.addRow(file, "GLOBAL", "✅");
+                }
+
+                // Tambahkan ke total array (untuk counting)
                 client.commandArray.push(command.data.toJSON());
 
+                // Handle prefix commands (jika ada)
                 if (command.name) {
                     client.commands.set(command.name, command);
-                    table.addRow(file, useGuildCommands ? "Guild Loaded" : "Global Loaded");
-            
+                    
                     if (command.aliases && Array.isArray(command.aliases)) {
                         command.aliases.forEach((alias) => {
                             client.aliases.set(alias, command.name);
                         });
                     }
-                } else {
-                    table.addRow(file, useGuildCommands ? "Guild Loaded" : "Global Loaded");
-                    continue;
                 }
             }
         }
 
-        console.log(`${color.blue}${table.toString()} \n[${getTimestamp()}] ${color.reset}[COMMANDS] Found ${client.commands.size} SlashCommands.`);
+        // Debug: Show counts
+        console.log(`${color.blue}${table.toString()}${color.reset}`);
+        console.log(`${color.cyan}[${getTimestamp()}] [COMMANDS] Total Commands: ${client.commandArray.length}${color.reset}`);
+        console.log(`${color.green}[${getTimestamp()}] [COMMANDS] Guild Commands: ${client.guildCommandArray.length}${color.reset}`);
+        console.log(`${color.yellow}[${getTimestamp()}] [COMMANDS] Global Commands: ${client.globalCommandArray.length}${color.reset}`);
+
+        // ===== VALIDASI SEBELUM DEPLOY =====
+        if (client.globalCommandArray.length > 100) {
+            console.log(`${color.red}[${getTimestamp()}] [ERROR] Too many global commands (${client.globalCommandArray.length}/100)!${color.reset}`);
+            console.log(`${color.red}[${getTimestamp()}] [ERROR] Please add more commands to guildOnly or use USE_GUILD_COMMANDS=true${color.reset}`);
+            return;
+        }
+
+        if (client.guildCommandArray.length > 100 && guildId) {
+            console.log(`${color.red}[${getTimestamp()}] [ERROR] Too many guild commands (${client.guildCommandArray.length}/100)!${color.reset}`);
+            return;
+        }
 
         const rest = new REST({ version: '10' }).setToken(process.env.token);
 
         (async () => {
             try {
-                if (useGuildCommands && guildId) {
-                    // Deploy to specific guild (no limit, instant)
+                // ===== DEPLOY GUILD COMMANDS =====
+                if (guildId && client.guildCommandArray.length > 0) {
                     client.logs.info(`[SLASH_COMMANDS] Deploying ${client.guildCommandArray.length} commands to guild: ${guildId}`);
 
                     await rest.put(
@@ -64,12 +116,10 @@ module.exports = (client) => {
                     );
 
                     client.logs.success(`[SLASH_COMMANDS] Successfully deployed guild commands.`);
-                } else {
-                    // Deploy globally (max 100, 1 hour delay)
-                    if (client.globalCommandArray.length > 100) {
-                        client.logs.warn(`[SLASH_COMMANDS] Warning: ${client.globalCommandArray.length} commands exceed 100 global limit!`);
-                    }
+                }
 
+                // ===== DEPLOY GLOBAL COMMANDS =====
+                if (client.globalCommandArray.length > 0) {
                     client.logs.info(`[SLASH_COMMANDS] Deploying ${client.globalCommandArray.length} global commands.`);
 
                     await rest.put(
@@ -80,8 +130,23 @@ module.exports = (client) => {
 
                     client.logs.success(`[SLASH_COMMANDS] Successfully deployed global commands.`);
                 }
+
+                // ===== HAPUS COMMANDS YANG TIDAK DIGUNAKAN =====
+                // Jika sebelumnya ada global commands tapi sekarang semua guild
+                if (useGuildCommands && client.globalCommandArray.length === 0) {
+                    client.logs.info(`[SLASH_COMMANDS] Clearing all global commands...`);
+                    await rest.put(Routes.applicationCommands(clientId), { body: [] });
+                    client.logs.success(`[SLASH_COMMANDS] Global commands cleared.`);
+                }
+
             } catch (error) {
-                console.error(`${color.red}[${getTimestamp()}] [SLASH_COMMANDS] Deployment error:`, error);
+                console.error(`${color.red}[${getTimestamp()}] [SLASH_COMMANDS] Deployment error:${color.reset}`, error);
+                
+                // Debug tambahan untuk error deployment
+                if (error.code === 30032) {
+                    console.log(`${color.red}[${getTimestamp()}] [ERROR] Command limit exceeded!${color.reset}`);
+                    console.log(`${color.red}[${getTimestamp()}] [ERROR] Try setting USE_GUILD_COMMANDS=true in .env${color.reset}`);
+                }
             }
         })();
     };
