@@ -7,9 +7,9 @@ const { Routes } = require("discord-api-types/v10");
 const envFile = process.env.NODE_ENV === "development" ? ".env.development" : ".env";
 dotenv.config({ path: path.resolve(process.cwd(), envFile) });
 
-const clientId = process.env.CLIENT_ID;
-const guildId = process.env.GUILD_ID;
-const token = process.env.TOKEN;
+const clientId = process.env.clientid;
+const guildId = process.env.guildid;
+const token = process.env.tokem;
 
 if (!clientId || !token) {
   console.error("❌ Missing CLIENT_ID or TOKEN in", envFile);
