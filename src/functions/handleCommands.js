@@ -20,6 +20,40 @@ module.exports = (client) => {
         console.log(`${color.yellow}[${getTimestamp()}] [DEBUG] USE_GUILD_COMMANDS: ${useGuildCommands}${color.reset}`);
         console.log(`${color.yellow}[${getTimestamp()}] [DEBUG] GUILD_ID: ${guildId}${color.reset}`);
 
+        // ===== STRATEGI: HANYA COMMANDS SENSITIF KE GUILD =====
+        // Categories yang WAJIB guild-only (commands berbahaya/sensitif)
+        const forceGuildCategories = [
+            'AI Commands',
+            'Admin Commands', 
+            'Moderation',
+            'Developer Commands',
+            'Setup Commands'
+        ];
+
+        // Commands yang WAJIB guild-only (berdasarkan nama)
+        const forceGuildCommands = [
+            'motionlife-ai',
+            'setup-motionlife-ai', 
+            'eval',
+            'ban',
+            'kick',
+            'mute',
+            'timeout',
+            'clear',
+            'purge'
+        ];
+
+        // Commands yang SELALU global (override semua setting)
+        const alwaysGlobalCommands = [
+            'help',
+            'ping',
+            'info',
+            'avatar',
+            'userinfo',
+            'serverinfo',
+            'invite'
+        ];
+
         for (folder of commandFolders) {
             const commandFiles = fs.readdirSync(`${path}/${folder}`).filter(file => file.endsWith('.js'));
             
@@ -33,38 +67,46 @@ module.exports = (client) => {
 
                 client.commands.set(command.data.name, command);
                 
+                const commandName = command.data.name;
+                const commandCategory = command.category;
+                
                 // ===== PERBAIKAN LOGIC DEPLOYMENT =====
                 let deploymentType = "GLOBAL";
                 let shouldBeGuild = false;
 
-                // 1. Cek jika ada property guildOnly
-                if (command.guildOnly === true) {
-                    shouldBeGuild = true;
-                    deploymentType = "GUILD (guildOnly)";
+                // 1. Cek always global commands (prioritas tertinggi)
+                if (alwaysGlobalCommands.includes(commandName)) {
+                    shouldBeGuild = false;
+                    deploymentType = "GLOBAL (forced)";
                 }
-                // 2. Cek USE_GUILD_COMMANDS environment
-                else if (useGuildCommands) {
+                // 2. Cek force guild commands
+                else if (forceGuildCommands.includes(commandName)) {
                     shouldBeGuild = true;
-                    deploymentType = "GUILD (env)";
+                    deploymentType = "GUILD (forced)";
                 }
-                // 3. Cek category yang sebaiknya guild-only
-                else if (command.category && [
-                    'AI Commands',
-                    'Admin Commands', 
-                    'Moderation',
-                    'Developer'
-                ].includes(command.category)) {
+                // 3. Cek force guild categories
+                else if (commandCategory && forceGuildCategories.includes(commandCategory)) {
                     shouldBeGuild = true;
                     deploymentType = "GUILD (category)";
+                }
+                // 4. Cek property guildOnly di command
+                else if (command.guildOnly === true) {
+                    shouldBeGuild = true;
+                    deploymentType = "GUILD (property)";
+                }
+                // 5. Default ke global (PENTING: ini berbeda dari logic sebelumnya)
+                else {
+                    shouldBeGuild = false;
+                    deploymentType = "GLOBAL (default)";
                 }
 
                 // Deploy berdasarkan hasil check
                 if (shouldBeGuild && guildId) {
                     client.guildCommandArray.push(command.data.toJSON());
-                    table.addRow(file, deploymentType, "✅");
+                    table.addRow(file, deploymentType, "🏠");
                 } else {
                     client.globalCommandArray.push(command.data.toJSON());
-                    table.addRow(file, "GLOBAL", "✅");
+                    table.addRow(file, deploymentType, "🌍");
                 }
 
                 // Tambahkan ke total array (untuk counting)
