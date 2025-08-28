@@ -47,17 +47,33 @@ module.exports = (client) => {
 
         (async () => {
             try {
-                client.logs.info(`[SLASH_COMMANDS] Started refreshing application (/) commands.`);
+                // OPTION 1: Guild-only commands (recommended untuk testing/private bot)
+                if (guildId) {
+                    client.logs.info(`[SLASH_COMMANDS] Started refreshing guild (/) commands for guild: ${guildId}`);
 
-                await rest.put(
-                    Routes.applicationCommands(clientId), {
-                        body: client.commandArray
-                    },
-                ).catch((error) => {
-                    console.error(`${color.red}[${getTimestamp()}] [SLASH_COMMANDS] Error while refreshing application (/) commands. \n${color.red}[${getTimestamp()}] [SLASH_COMMANDS] Check if your clientID is correct and matches your bots token:`, error);
-                });
+                    await rest.put(
+                        Routes.applicationGuildCommands(clientId, guildId), {
+                            body: client.commandArray
+                        },
+                    ).catch((error) => {
+                        console.error(`${color.red}[${getTimestamp()}] [SLASH_COMMANDS] Error while refreshing guild (/) commands:`, error);
+                    });
 
-                client.logs.success(`[SLASH_COMMANDS] Successfully reloaded application (/) commands.`);
+                    client.logs.success(`[SLASH_COMMANDS] Successfully reloaded ${client.commandArray.length} guild (/) commands.`);
+                } else {
+                    // OPTION 2: Global commands (fallback jika tidak ada guild ID)
+                    client.logs.info(`[SLASH_COMMANDS] No guild ID provided, using global commands (limited to 100).`);
+
+                    await rest.put(
+                        Routes.applicationCommands(clientId), {
+                            body: client.commandArray
+                        },
+                    ).catch((error) => {
+                        console.error(`${color.red}[${getTimestamp()}] [SLASH_COMMANDS] Error while refreshing application (/) commands:`, error);
+                    });
+
+                    client.logs.success(`[SLASH_COMMANDS] Successfully reloaded application (/) commands.`);
+                }
             } catch (error) {
                 console.error(error);
             }
