@@ -5,9 +5,9 @@ class FiveMAPI {
     constructor() {
         this.serverDomain = "main.motionliferp.com";
         this.config = {
-            fetchInterval: 30_000, // fetch setiap 30 detik
-            cacheExpiry: 45_000,   // cache expire 45 detik
-            timeout: 8_000,        // timeout 8 detik
+            fetchInterval: 30_000,
+            cacheExpiry: 45_000,
+            timeout: 8_000,
         };
         
         this.cache = new Map();
@@ -35,7 +35,6 @@ class FiveMAPI {
     // Internal method untuk fetch dan cache
     async _fetchAndCache(serverId) {
         try {
-            console.log(`${color.blue}[${getTimestamp()}] [FIVEM_API] Fetching fresh data from ${serverId}${color.reset}`);
             
             const [dynamicData, playersData] = await Promise.allSettled([
                 fetch(`http://${serverId}:30120/dynamic.json`, { 
@@ -63,7 +62,6 @@ class FiveMAPI {
             };
 
             this.cache.set(serverId, serverData);
-            console.log(`${color.green}[${getTimestamp()}] [FIVEM_API] ✓ Cached data: ${serverData.clients}/${serverData.maxPlayers} players${color.reset}`);
             
             return serverData;
 
