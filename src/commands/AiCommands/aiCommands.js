@@ -7,6 +7,7 @@ module.exports = {
     underDevelopment: false,
     usableInDms: false,
     category: 'AI Commands',
+    guildOnly: true,
     data: new SlashCommandBuilder()
     .setName('ai')
     .setDescription('Generate AI chat response')
