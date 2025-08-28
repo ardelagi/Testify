@@ -1,4 +1,3 @@
-// src/commands/AiCommands/listMotionlifeAi.js
 const { SlashCommandBuilder, EmbedBuilder, PermissionFlagsBits } = require('discord.js');
 const MotionlifeAiChannel = require('../../schemas/motionlifeAiChannel');
 
@@ -6,6 +5,7 @@ module.exports = {
     underDevelopment: false,
     usableInDms: false,
     category: 'AI Commands',
+    guildOnly: true,
     data: new SlashCommandBuilder()
         .setName('list-motionlife-ai')
         .setDescription('List semua AI channels untuk Motionlife Roleplay')
