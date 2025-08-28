@@ -15,7 +15,32 @@ module.exports = {
     .addSubcommand(command => command.setName('setup-channel').setDescription('Setup AI channel for AI chat response').addChannelOption(option => option.setName('channel').setDescription('Channel to setup AI chat response').setRequired(true)).addStringOption(option => option.setName('ai-instructions').setDescription('Instructions for AI chat response').setRequired(false)))
     .addSubcommand(command => command.setName('disable-channel').setDescription('Disable AI chat response in a channel'))
     .addSubcommand(command => command.setName('update-ai-instructions').setDescription('Update AI instructions for AI chat response').addStringOption(option => option.setName('ai-instructions').setDescription('Instructions for AI chat response').setRequired(true))),
+    
     async execute(interaction, client) {
+        // Role yang diizinkan menggunakan command
+        const allowedRoles = [
+            '1381094853626171472', 
+            '1383040700400013410',
+        ];
+
+        const hasPermission = interaction.member.roles.cache.some(role => 
+            allowedRoles.includes(role.id)
+        );
+
+        if (!hasPermission) {
+            const noPermEmbed = new EmbedBuilder()
+                .setAuthor({ name: `Access Denied ${client.config.devBy}` })
+                .setTitle(`${client.config.errorEmoji} Motionlife AI Helper`)
+                .setDescription(`You don't have permission to use this command!\n\nOnly **Staff Members** can access Motionlife AI Helper.`)
+                .setColor('#FF0000')
+                .setFooter({ text: 'Motionlife Roleplay • Access Control' })
+                .setTimestamp();
+
+            return await interaction.reply({ 
+                embeds: [noPermEmbed], 
+                ephemeral: true 
+            });
+        }
 
         await interaction.deferReply();
 
