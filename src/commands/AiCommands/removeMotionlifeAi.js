@@ -6,6 +6,7 @@ module.exports = {
     underDevelopment: false,
     usableInDms: false,
     category: 'AI Commands',
+    guildOnly: true,
     data: new SlashCommandBuilder()
         .setName('remove-motionlife-ai')
         .setDescription('Remove AI channel setup untuk Motionlife Roleplay')
