@@ -91,9 +91,9 @@ module.exports = {
         // Initialize FiveM API
         await FiveMAPI.getAll(SERVER_DOMAIN);
 
-        // Update presence setiap 15 detik (lebih lambat dari fetch cycle)
+
         updatePresence();
-        const presenceInterval = setInterval(updatePresence, 5_000);
+        const presenceInterval = setInterval(updatePresence, 10_000);
 
         // Cleanup saat bot shutdown
         process.on('SIGINT', () => {
