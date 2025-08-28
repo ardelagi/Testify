@@ -1,6 +1,6 @@
 const { Events } = require('discord.js');
 const SetupChannel = require('../../schemas/aiChannelSystem');
-const { ApexChat } = require('apexify.js');
+const { GroqChat } = require('../../utils/groqHelper');
 const filter = require('../../jsons/filter.json');
 
 module.exports = {
@@ -40,14 +40,14 @@ module.exports = {
         const chatOptions = {
             userId: `${message.author.id}-${message.guild.id}`,
             memory: true,
-            limit: 12,
+            limit: 150,
             instruction: `${instruction}`,
         };
 
         try {
             await message.channel.sendTyping();
 
-            let chatResponse = await ApexChat(chatModel, chatPrompt, chatOptions);
+            let chatResponse = await GroqChat(chatModel, chatPrompt, chatOptions);
 
             if (!chatResponse || chatResponse.trim().length === 0) {
                 client.logs.error(`[AI_CHANNEL_EVENT] Received an empty response from the AI for prompt: ${chatPrompt}`);
