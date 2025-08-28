@@ -8,7 +8,7 @@ module.exports = {
 	eventListeners: 20,
 	botName: "Motionlife Assistant",
 	dev: "ardelagii",
-	devBy: "| Developed by ardelagi",
+	devBy: "",
 	developers: "729602261508161636",
 	noPerms: `You **do not** have the required permissions to use this command!`,
 	ownerOnlyCommand: `This command is **only** available for the owner of the bot!`,
@@ -111,9 +111,9 @@ module.exports = {
 	ticketMemberRemove: "has been removed from the ticket.",
 
 	// AI Chat Models //
-	aiChatChannelModel: "mistral-large-latest",
-	aiChatModel: "gpt-4o",
-	aiImageGenModel: "flux-pro",
+	aiChatChannelModel: "llama-3.3-70b-versatile",
+	aiChatModel: "llama-3.3-70b-versatile",
+	aiImageGenModel: "dall-e-3",
 
 	// ValorantEmoji //
 	valoRadianite: "<:ValoRadianite:1335281554942853271>",
