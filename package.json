@@ -21,6 +21,7 @@
     "setup-env:dev": "node src/scripts/setupEnvFile.js setup-env:dev",
     "commit": "node src/scripts/commitRunner.js",
     "log-setup": "node src/scripts/setupLogs.js",
+    "clear:dev": "NODE_ENV=development node clearCommands.js",
     "codebase-info": "node src/scripts/linesOfCode.js"
   },
   "keywords": [],
