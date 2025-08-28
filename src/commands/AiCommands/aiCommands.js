@@ -1,5 +1,5 @@
 const { SlashCommandBuilder, EmbedBuilder, MessageFlags } = require('discord.js');
-const { ApexChat, ApexImagine, ApexImageAnalyzer } = require('apexify.js');
+const { GroqChat } = require('../../utils/groqHelper'); 
 const SetupChannel = require('../../schemas/aiChannelSystem');
 const filter = require('../../jsons/filter.json');
 
@@ -10,8 +10,6 @@ module.exports = {
     data: new SlashCommandBuilder()
     .setName('ai')
     .setDescription('Generate AI chat response')
-    .addSubcommand(command => command.setName('image-generate').setDescription('Generate AI image').addStringOption(option => option.setName('prompt').setDescription('Prompt for AI image generation').setRequired(true)))
-    .addSubcommand(command => command.setName('image-analyser').setDescription('Generate AI response for a summary of an image').addStringOption(option => option.setName('image-url').setDescription('Url for the image you want a summary on').setRequired(true)).addStringOption(option => option.setName("prompt").setDescription("Prompt for AI image analyser").setRequired(false)))
     .addSubcommand(command => command.setName('chat').setDescription('Generate AI chat response').addStringOption(option => option.setName('prompt').setDescription('Prompt for AI chat response').setRequired(true)))
     .addSubcommand(command => command.setName('setup-channel').setDescription('Setup AI channel for AI chat response').addChannelOption(option => option.setName('channel').setDescription('Channel to setup AI chat response').setRequired(true)).addStringOption(option => option.setName('ai-instructions').setDescription('Instructions for AI chat response').setRequired(false)))
     .addSubcommand(command => command.setName('disable-channel').setDescription('Disable AI chat response in a channel'))
@@ -25,83 +23,6 @@ module.exports = {
         const filterMessage = "The prompt you have entered includes profanity which is **not** allowed. Please try again with a different prompt.";
 
         switch (sub) {
-            case "image-generate":
-                await interaction.channel.sendTyping();
-
-                const getPromptImage = interaction.options.getString('prompt');
-
-                const model = `${client.config.aiImageGenModel}`;
-                const prompt = `${getPromptImage}`;
-                const imageOptions = {
-                    count: 1,
-                    nsfw: false,
-                    deepCheck: false,
-                    nsfwWords: [],
-                    negative_prompt: "",
-                    sampler: "DPM++ 2M Karras",
-                    height: 512,
-                    width: 512,
-                    cfg_scale: 9,
-                    steps: 20,
-                    seed: -1,
-                    image_style: "cinematic"
-                };
-
-                try {
-                    const imageResponse = await ApexImagine(model, prompt, imageOptions);
-                    const imageUrl = Array.isArray(imageResponse) ? imageResponse[0] : imageResponse;
-
-                    if (imageOptions.nsfw === false && filter.words.includes(prompt)) {
-                        await interaction.editReply({ content: `NSFW content has been disabled. Only the owner of the bot can change this. Please try with a different prompt that does not include NSFW content.`, flags: MessageFlags.Ephemeral });
-                        return;
-                    }
-
-                    const embed = new EmbedBuilder()
-                    .setAuthor({ name: `AI Image Generation ${client.config.devBy}`})
-                    .setTitle(`${client.user.username} AI Image Generation ${client.config.arrowEmoji}`)
-                    .setDescription(`**Prompt:** ${prompt}`)
-                    .setImage(imageUrl)
-                    .setColor(client.config.embedAi)
-                    .setFooter({ text: `AI Image generated using ${model} model`})
-                    .setTimestamp();
-
-                    await interaction.editReply({ embeds: [embed] });
-                } catch (error) {
-                    console.log(error);
-                    await interaction.editReply({ content: `An error occurred while generating AI image with the prompt: **${prompt}**. Please try again later.`, flags: MessageFlags.Ephemeral });
-                    client.logs.error("[AI_IMAGE_GENERATE] Error occurred in AI Image Generation: ", error);
-                }
-
-            break;
-            case "image-analyser":
-                await interaction.channel.sendTyping();
-
-                const getImageUrl = interaction.options.getString('image-url');
-                const getAnalysisPrompt = interaction.options.getString('prompt') || "Analyze this image";
-
-                if (filter.words.includes(getAnalysisPrompt)) {
-                    return await interaction.editReply({ content: `${filterMessage}`, flags: MessageFlags.Ephemeral });
-                }
-
-                try {
-                    const analysisResult = await ApexImageAnalyzer({ imgURL: getImageUrl, getAnalysisPrompt });
-
-                    const embed = new EmbedBuilder()
-                    .setAuthor({ name: `AI Image Analyser ${client.config.devBy}`})
-                    .setTitle(`${client.user.username} AI Image Analyser ${client.config.arrowEmoji}`)
-                    .setDescription(`**Image URL:** ${getImageUrl}\n\n**Image Summary:**\n${analysisResult}`)
-                    .setColor(client.config.embedAi)
-                    .setFooter({ text: `AI Image Analyser`})
-                    .setTimestamp();
-
-                    await interaction.editReply({ embeds: [embed] });
-                } catch (error) {
-                    console.log(error);
-                    await interaction.editReply({ content: `An error occurred while generating AI image-reader response with the URL: **${getImageUrl}** & prompt: **${getAnalysisPrompt}. Please try again later.`, flags: MessageFlags.Ephemeral });
-                    client.logs.error("[AI_IMAGE_ANALYSER] Error occurred in AI Image Analyser: ", error);
-                }
-
-            break;
             case 'chat':
                 await interaction.channel.sendTyping();
 
@@ -116,12 +37,12 @@ module.exports = {
                 const chatOptions = {
                     userId: interaction.user.id,
                     memory: false,
-                    limit: 0,
+                    limit: 100,
                     instruction: 'You are a friendly assistant.',
                 };
 
                 try {
-                    const chatResponse = await ApexChat(chatModel, chatPrompt, chatOptions);
+                    const chatResponse = await GroqChat(chatModel, chatPrompt, chatOptions);
 
                     if (chatResponse.includes('@here') || chatResponse.includes('@everyone')) {
                         chatResponse = chatResponse.replace(/@here/g, '[here]').replace(/@everyone/g, '[everyone]');
