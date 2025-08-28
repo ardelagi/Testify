@@ -7,25 +7,33 @@ const { color, getTimestamp } = require('../utils/loggingEffects.js');
 const table = new ascii().setHeading("File Name", "Status");
 
 const clientId = process.env.clientid; 
-if (!clientId) {
-    console.error(`${color.red}[${getTimestamp()}] [SLASH_COMMANDS] No client ID provided. Please provide a valid client ID in the .env file.`);
-    return;
-}
-const guildId = process.env.guildid; 
+const guildId = process.env.guildid;
+const useGuildCommands = process.env.USE_GUILD_COMMANDS === 'true'; // Add this to .env
 
 module.exports = (client) => {
     client.handleCommands = async (commandFolders, path) => {
         client.commandArray = [];
+        client.guildCommandArray = []; // For guild-specific commands
+        client.globalCommandArray = []; // For global commands
+
         for (folder of commandFolders) {
             const commandFiles = fs.readdirSync(`${path}/${folder}`).filter(file => file.endsWith('.js'));
             for (const file of commandFiles) {
                 const command = require(`../commands/${folder}/${file}`);
                 client.commands.set(command.data.name, command);
+                
+                // Check if command should be guild-only (you can add a property to commands)
+                if (command.guildOnly || useGuildCommands) {
+                    client.guildCommandArray.push(command.data.toJSON());
+                } else {
+                    client.globalCommandArray.push(command.data.toJSON());
+                }
+
                 client.commandArray.push(command.data.toJSON());
 
                 if (command.name) {
                     client.commands.set(command.name, command);
-                    table.addRow(file, "Loaded");
+                    table.addRow(file, useGuildCommands ? "Guild Loaded" : "Global Loaded");
             
                     if (command.aliases && Array.isArray(command.aliases)) {
                         command.aliases.forEach((alias) => {
@@ -33,7 +41,7 @@ module.exports = (client) => {
                         });
                     }
                 } else {
-                    table.addRow(file, "Loaded");
+                    table.addRow(file, useGuildCommands ? "Guild Loaded" : "Global Loaded");
                     continue;
                 }
             }
@@ -41,41 +49,39 @@ module.exports = (client) => {
 
         console.log(`${color.blue}${table.toString()} \n[${getTimestamp()}] ${color.reset}[COMMANDS] Found ${client.commands.size} SlashCommands.`);
 
-        const rest = new REST({
-            version: '10'
-        }).setToken(process.env.token);
+        const rest = new REST({ version: '10' }).setToken(process.env.token);
 
         (async () => {
             try {
-                // OPTION 1: Guild-only commands (recommended untuk testing/private bot)
-                if (guildId) {
-                    client.logs.info(`[SLASH_COMMANDS] Started refreshing guild (/) commands for guild: ${guildId}`);
+                if (useGuildCommands && guildId) {
+                    // Deploy to specific guild (no limit, instant)
+                    client.logs.info(`[SLASH_COMMANDS] Deploying ${client.guildCommandArray.length} commands to guild: ${guildId}`);
 
                     await rest.put(
                         Routes.applicationGuildCommands(clientId, guildId), {
-                            body: client.commandArray
-                        },
-                    ).catch((error) => {
-                        console.error(`${color.red}[${getTimestamp()}] [SLASH_COMMANDS] Error while refreshing guild (/) commands:`, error);
-                    });
+                            body: client.guildCommandArray
+                        }
+                    );
 
-                    client.logs.success(`[SLASH_COMMANDS] Successfully reloaded ${client.commandArray.length} guild (/) commands.`);
+                    client.logs.success(`[SLASH_COMMANDS] Successfully deployed guild commands.`);
                 } else {
-                    // OPTION 2: Global commands (fallback jika tidak ada guild ID)
-                    client.logs.info(`[SLASH_COMMANDS] No guild ID provided, using global commands (limited to 100).`);
+                    // Deploy globally (max 100, 1 hour delay)
+                    if (client.globalCommandArray.length > 100) {
+                        client.logs.warn(`[SLASH_COMMANDS] Warning: ${client.globalCommandArray.length} commands exceed 100 global limit!`);
+                    }
+
+                    client.logs.info(`[SLASH_COMMANDS] Deploying ${client.globalCommandArray.length} global commands.`);
 
                     await rest.put(
                         Routes.applicationCommands(clientId), {
-                            body: client.commandArray
-                        },
-                    ).catch((error) => {
-                        console.error(`${color.red}[${getTimestamp()}] [SLASH_COMMANDS] Error while refreshing application (/) commands:`, error);
-                    });
+                            body: client.globalCommandArray
+                        }
+                    );
 
-                    client.logs.success(`[SLASH_COMMANDS] Successfully reloaded application (/) commands.`);
+                    client.logs.success(`[SLASH_COMMANDS] Successfully deployed global commands.`);
                 }
             } catch (error) {
-                console.error(error);
+                console.error(`${color.red}[${getTimestamp()}] [SLASH_COMMANDS] Deployment error:`, error);
             }
         })();
     };
