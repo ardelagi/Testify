@@ -1,0 +1,267 @@
+{
+  "serverInfo": {
+    "name": "Motionlife Roleplay",
+    "type": "FiveM Roleplay Server",
+    "description": "Server roleplay Indonesia terbaik dengan komunitas yang solid dan sistem yang realistis",
+    "ip": "connect `main.motionliferp.com`",
+    "discord": "https://discord.gg/motionliferoleplay",
+    "website": "https://motionlife-rp.com",
+    "maxPlayers": 1600,
+    "language": "Bahasa Indonesia",
+    "timezone": "WIB (UTC+7)"
+  },
+  "rules": [
+    "No Random Death Match (RDM) - Dilarang membunuh tanpa alasan roleplay yang jelas",
+    "No Vehicle Death Match (VDM) - Dilarang menabrak pemain lain dengan kendaraan tanpa alasan roleplay",
+    "No Meta Gaming - Dilarang menggunakan informasi OOC dalam roleplay",
+    "No Power Gaming - Dilarang memaksa roleplay tanpa memberi kesempatan pemain lain untuk merespon",
+    "Wajib menggunakan Bahasa Indonesia yang baik dan benar dalam roleplay",
+    "Dilarang OOC di chat IC, gunakan /ooc atau /b untuk chat OOC",
+    "Respect sesama pemain, jaga attitude dan sportivitas",
+    "Dilarang exploiting bug atau cheat dalam bentuk apapun",
+    "Character harus realistis, tidak boleh berlebihan (superhuman)",
+    "Ikuti Fear RP - karakter harus takut saat diancam dengan senjata"
+  ],
+  "jobs": [
+    {
+      "name": "LSPD (Los Santos Police Department)",
+      "description": "Penegak hukum yang menjaga keamanan dan ketertiban kota",
+      "requirements": "Umur minimal 21 tahun, bersedia training, attitude baik",
+      "salary": "$150-300 per jam",
+      "ranks": ["Cadet", "Officer", "Senior Officer", "Sergeant", "Lieutenant", "Captain", "Chief"]
+    },
+    {
+      "name": "EMS (Emergency Medical Service)",
+      "description": "Tenaga medis yang menangani emergency dan pengobatan warga",
+      "requirements": "Umur minimal 19 tahun, basic medical knowledge, patient",
+      "salary": "$120-250 per jam",
+      "ranks": ["Trainee", "Paramedic", "Senior Paramedic", "Supervisor", "Chief of EMS"]
+    },
+    {
+      "name": "Mechanic",
+      "description": "Teknisi yang memperbaiki dan memodifikasi kendaraan",
+      "requirements": "Basic knowledge tentang kendaraan, rajin",
+      "salary": "$80-200 per job",
+      "services": ["Repair", "Tuning", "Custom Paint", "Performance Upgrade"]
+    },
+    {
+      "name": "Real Estate Agent",
+      "description": "Agen properti yang menjual dan menyewakan rumah/apartemen",
+      "requirements": "Komunikasi baik, knowledge tentang properti",
+      "salary": "Commission based (5-15%)",
+      "properties": ["Houses", "Apartments", "Business Properties", "Garages"]
+    },
+    {
+      "name": "Taxi Driver",
+      "description": "Supir taksi yang mengantarkan warga ke tujuan",
+      "requirements": "SIM, attitude baik, hafal jalan",
+      "salary": "$50-100 per trip",
+      "vehicles": ["Standard Taxi", "Luxury Taxi", "SUV Taxi"]
+    },
+    {
+      "name": "Delivery Driver",
+      "description": "Pengantar barang dan makanan ke seluruh kota",
+      "requirements": "Kendaraan (motor/mobil), GPS knowledge",
+      "salary": "$30-80 per delivery",
+      "types": ["Food Delivery", "Package Delivery", "Express Delivery"]
+    }
+  ],
+  "locations": [
+    {
+      "name": "City Hall",
+      "description": "Pusat pemerintahan untuk urusan administratif dan perpanjangan dokumen",
+      "coordinates": "Downtown Los Santos",
+      "services": ["ID Card", "Driver License", "Business License", "Marriage Certificate"]
+    },
+    {
+      "name": "LSPD Station",
+      "description": "Kantor polisi utama Los Santos",
+      "coordinates": "Mission Row",
+      "services": ["Report Crime", "Bail Out", "Evidence Locker", "Briefing Room"]
+    },
+    {
+      "name": "Pillbox Medical Center",
+      "description": "Rumah sakit utama untuk perawatan medis",
+      "coordinates": "Pillbox Hill",
+      "services": ["Emergency Treatment", "Surgery", "Pharmacy", "Mental Health"]
+    },
+    {
+      "name": "Los Santos Customs",
+      "description": "Bengkel modifikasi kendaraan terbesar",
+      "coordinates": "Multiple locations",
+      "services": ["Car Repair", "Performance Tuning", "Visual Mods", "Paint Jobs"]
+    },
+    {
+      "name": "Diamond Casino & Resort",
+      "description": "Kasino mewah dengan berbagai fasilitas hiburan",
+      "coordinates": "East Vinewood",
+      "services": ["Gambling", "Shopping", "Restaurant", "Hotel Rooms"]
+    },
+    {
+      "name": "Los Santos International Airport",
+      "description": "Bandara utama untuk perjalanan antar kota",
+      "coordinates": "LSIA",
+      "services": ["Flight Tickets", "Private Jets", "Car Rental", "Cargo"]
+    }
+  ],
+  "commands": [
+    {
+      "command": "/me",
+      "description": "Menampilkan aksi roleplay karakter",
+      "usage": "/me opens the car door slowly",
+      "example": "John Doe opens the car door slowly"
+    },
+    {
+      "command": "/do",
+      "description": "Menjelaskan kondisi lingkungan atau hasil aksi",
+      "usage": "/do The door would creak loudly",
+      "example": "The door would creak loudly"
+    },
+    {
+      "command": "/ooc atau /b",
+      "description": "Chat Out of Character",
+      "usage": "/ooc Hey, good roleplay!",
+      "example": "(( Hey, good roleplay! ))"
+    },
+    {
+      "command": "/911",
+      "description": "Memanggil emergency services (Police/EMS)",
+      "usage": "/911 There's an accident at Grove Street",
+      "example": "Emergency call dispatched"
+    },
+    {
+      "command": "/211",
+      "description": "Memanggil mechanic atau taxi",
+      "usage": "/211 Need mechanic at Legion Square",
+      "example": "Service call sent to drivers"
+    },
+    {
+      "command": "/carry",
+      "description": "Menggendong pemain yang injured",
+      "usage": "/carry [player ID]",
+      "example": "You are now carrying John Doe"
+    },
+    {
+      "command": "/inventory",
+      "description": "Membuka inventory karakter",
+      "usage": "/inventory atau tekan Tab",
+      "example": "Inventory window opened"
+    }
+  ],
+  "faq": [
+    {
+      "question": "Bagaimana cara join server Motionlife Roleplay?",
+      "answer": "1. Install FiveM di komputer Anda\n2. Buat karakter di Discord server\n3. Join server dengan IP yang tersedia\n4. Ikuti tutorial new player\n5. Mulai roleplay!"
+    },
+    {
+      "question": "Apa itu RDM dan VDM?",
+      "answer": "RDM (Random Death Match) adalah membunuh pemain tanpa alasan roleplay. VDM (Vehicle Death Match) adalah menabrak pemain dengan kendaraan tanpa alasan. Keduanya melanggar aturan server."
+    },
+    {
+      "question": "Bagaimana cara mendapatkan pekerjaan?",
+      "answer": "Kunjungi City Hall untuk melihat lowongan pekerjaan, atau langsung datang ke tempat kerja yang diinginkan. Beberapa pekerjaan memerlukan interview dan training."
+    },
+    {
+      "question": "Bisakah saya memiliki lebih dari satu karakter?",
+      "answer": "Ya, Anda bisa memiliki multiple character dengan backstory yang berbeda. Pastikan tidak ada meta gaming antar karakter Anda."
+    },
+    {
+      "question": "Bagaimana sistem ekonomi di server?",
+      "answer": "Server menggunakan sistem ekonomi realistis. Anda bisa bekerja untuk mendapat gaji, berbisnis, atau berinvestasi. Semua transaksi harus melalui roleplay."
+    },
+    {
+      "question": "Apa yang harus dilakukan jika terjadi rule break?",
+      "answer": "Report ke admin melalui ticket di Discord atau gunakan command /report in-game dengan bukti yang jelas (screenshot/video)."
+    },
+    {
+      "question": "Bagaimana cara membeli rumah atau kendaraan?",
+      "answer": "Kunjungi Real Estate Agent untuk properti atau Dealership untuk kendaraan. Semua pembelian harus melalui roleplay dan sistem pembayaran in-game."
+    },
+    {
+      "question": "Apakah ada event khusus di server?",
+      "answer": "Ya, admin rutin mengadakan event roleplay seperti festival, konser, race, atau event seasonal. Info event biasanya diumumkan di Discord."
+    }
+  ],
+  "businesses": [
+    {
+      "name": "Vanilla Unicorn",
+      "type": "Strip Club",
+      "description": "Club malam dengan entertainment untuk dewasa",
+      "location": "Strawberry Ave"
+    },
+    {
+      "name": "Bean Machine Coffee",
+      "type": "Coffee Shop",
+      "description": "Kedai kopi populer di berbagai lokasi",
+      "location": "Multiple locations"
+    },
+    {
+      "name": "Bahama Mamas",
+      "type": "Restaurant & Bar",
+      "description": "Restaurant dengan suasana pantai dan live music",
+      "location": "Del Perro"
+    },
+    {
+      "name": "Cluckin' Bell",
+      "type": "Fast Food",
+      "description": "Fast food chain ayam goreng",
+      "location": "Multiple locations"
+    }
+  ],
+  "vehicles": {
+    "categories": [
+      {
+        "name": "Sports Cars",
+        "description": "Mobil sport dengan performa tinggi",
+        "examples": ["Pfister 811", "Pegassi Zentorno", "Grotti X80 Proto"]
+      },
+      {
+        "name": "Luxury Cars",
+        "description": "Mobil mewah untuk status symbol",
+        "examples": ["Enus Super Diamond", "Benefactor Schafter V12", "Albany Alpha"]
+      },
+      {
+        "name": "Motorcycles",
+        "description": "Motor dengan berbagai jenis dan performa",
+        "examples": ["Western Daemon", "Pegassi Bati 801", "Shitzu Hakuchou"]
+      },
+      {
+        "name": "Trucks & SUVs",
+        "description": "Kendaraan besar untuk cargo dan keluarga",
+        "examples": ["Vapid Sandking", "Benefactor Dubsta", "Declasse Granger"]
+      }
+    ]
+  },
+  "criminalActivities": {
+    "note": "Aktivitas kriminal harus dilakukan dengan roleplay yang baik dan mengikuti aturan server",
+    "types": [
+      {
+        "name": "Drug Dealing",
+        "description": "Jual beli narkoba dengan sistem yang realistis",
+        "requirements": "Koneksi dengan supplier, spot yang aman"
+      },
+      {
+        "name": "Bank Robbery",
+        "description": "Perampokan bank yang memerlukan planning matang",
+        "requirements": "Team yang solid, equipment, escape plan"
+      },
+      {
+        "name": "Street Racing",
+        "description": "Balapan liar di jalanan kota",
+        "requirements": "Kendaraan cepat, knowledge jalanan"
+      },
+      {
+        "name": "Gang Activities",
+        "description": "Aktivitas organisasi kriminal",
+        "requirements": "Membership di gang, loyalty, territory knowledge"
+      }
+    ]
+  },
+  "supportContacts": {
+    "discord": "https://discord.gg/motionliferoleplay",
+    "website": "https://motionlife-rp.com",
+    "adminTicket": "Buka ticket di Discord server",
+    "reportBug": "Channel #bug-reports di Discord",
+    "suggestions": "Channel #suggestions di Discord"
+  }
+}
