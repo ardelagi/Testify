@@ -6,6 +6,7 @@ module.exports = {
     underDevelopment: false,
     usableInDms: false,
     category: 'AI Commands',
+    guildOnly: true,
     data: new SlashCommandBuilder()
         .setName('setup-motionlife-ai')
         .setDescription('Setup AI channel khusus untuk Motionlife Roleplay FiveM')
