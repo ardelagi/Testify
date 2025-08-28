@@ -9,7 +9,7 @@ dotenv.config({ path: path.resolve(process.cwd(), envFile) });
 
 const clientId = process.env.clientid;
 const guildId = process.env.guildid;
-const token = process.env.tokem;
+const token = process.env.token;
 
 if (!clientId || !token) {
   console.error("❌ Missing CLIENT_ID or TOKEN in", envFile);
