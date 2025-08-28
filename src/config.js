@@ -5,7 +5,7 @@ module.exports = {
 	// BOT INFO //
 	prefix: "m?", // Default prefix
 	status: "dnd",
-	eventListeners: 20,
+	eventListeners: 50,
 	botName: "Motionlife Assistant",
 	dev: "ardelagii",
 	devBy: "",
