@@ -8,7 +8,6 @@ module.exports = {
     name: 'clientReady',
     once: true,
     async execute(client) {
-
         client.logs.info(`[SCHEMAS] Started loading schemas...`);
 
         if (!mongodbURL) {
@@ -18,12 +17,10 @@ module.exports = {
 
         try {
             mongoose.set("strictQuery", false);
-            await mongoose.connect(mongodbURL || ``, {
-                keepAlive: true,
-                useNewUrlParser: true,
-                useUnifiedTopology: true,
+            await mongoose.connect(mongodbURL, {
                 serverSelectionTimeoutMS: 10000,
             });
+            client.logs.success(`[DATABASE] Connected to MongoDB!`);
         } catch (err) {
             client.logs.error(`[DATABASE] Error connecting to the database: ${err}`);
             return;
