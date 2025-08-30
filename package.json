@@ -32,7 +32,7 @@
     "@distube/soundcloud": "^2.0.4",
     "@distube/spotify": "^2.0.2",
     "@distube/yt-dlp": "^2.0.1",
-    "@distube/ytsr": "^2.1.0",
+    "@distube/ytsr": "^2.0.4",
     "@napi-rs/canvas": "^0.1.55",
     "apexify.js": "^4.6.0",
     "ascii-table": "^0.0.9",
