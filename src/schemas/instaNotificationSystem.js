@@ -1,26 +1,24 @@
 const mongoose = require('mongoose');
 
-// Helper function to sanitize keys for MongoDB
-function sanitizeKey(key) {
-    return key.replace(/\./g, '_DOT_');
+function sanitizeKey(username) {
+    return username.replace(/\./g, '__DOT__');
 }
 
-// Helper function to restore original keys
-function restoreKey(key) {
-    return key.replace(/_DOT_/g, '.');
+function restoreKey(sanitizedKey) {
+    return sanitizedKey.replace(/__DOT__/g, '.');
 }
 
 const instagramSchema = new mongoose.Schema({
     Guild: { type: String, required: true },
     Channel: { type: String, required: true },
-    InstagramUsers: [{ type: String }],
+    InstagramUsers: [{ type: String }], 
     LastPostDates: { type: Map, of: Date, default: new Map() }
 });
 
-// Add instance methods to handle key sanitization
 instagramSchema.methods.setLastPostDate = function(username, date) {
     const sanitizedKey = sanitizeKey(username);
     this.LastPostDates.set(sanitizedKey, date);
+    return this;
 };
 
 instagramSchema.methods.getLastPostDate = function(username) {
@@ -40,15 +38,31 @@ instagramSchema.methods.deleteLastPostDate = function(username) {
 
 instagramSchema.methods.getAllLastPostDates = function() {
     const result = {};
-    for (const [key, value] of this.LastPostDates.entries()) {
-        const originalKey = restoreKey(key);
-        result[originalKey] = value;
+    for (const [sanitizedKey, date] of this.LastPostDates.entries()) {
+        const originalUsername = restoreKey(sanitizedKey);
+        result[originalUsername] = date;
     }
     return result;
 };
 
-// Export the helper functions as well
+instagramSchema.methods.cleanupOrphanedDates = function() {
+    const validUsernames = new Set(this.InstagramUsers);
+    const toDelete = [];
+    
+    for (const [sanitizedKey] of this.LastPostDates.entries()) {
+        const originalUsername = restoreKey(sanitizedKey);
+        if (!validUsernames.has(originalUsername)) {
+            toDelete.push(sanitizedKey);
+        }
+    }
+    
+    toDelete.forEach(key => this.LastPostDates.delete(key));
+    return toDelete.length; 
+};
+
 instagramSchema.statics.sanitizeKey = sanitizeKey;
 instagramSchema.statics.restoreKey = restoreKey;
+
+instagramSchema.index({ Guild: 1, Channel: 1 });
 
 module.exports = mongoose.model('InstagramNotifications', instagramSchema);
