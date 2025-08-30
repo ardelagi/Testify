@@ -11,7 +11,6 @@ function distubeClient(client, distube) {
     
     try {
         client.distube = new DisTube(client, {
-            leaveOnStop: false,
             emitNewSongOnly: true,
             emitAddSongWhenCreatingQueue: false,
             emitAddListWhenCreatingQueue: false,
