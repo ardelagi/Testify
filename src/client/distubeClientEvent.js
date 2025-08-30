@@ -16,11 +16,9 @@ function distubeClient(client, distube) {
             emitAddSongWhenCreatingQueue: false,
             emitAddListWhenCreatingQueue: false,
             plugins: [
-                new SpotifyPlugin({
-                    emitEventsAfterFetching: true
-                }),
-            new SoundCloudPlugin(),
-            new YtDlpPlugin()
+                new SpotifyPlugin(),
+                new SoundCloudPlugin(),
+                new YtDlpPlugin({ update: true })
             ]
         });
         console.log(`${color.green}[${getTimestamp()}]${color.reset} [MUSIC] DisTube client initialized successfully`);
