@@ -8,7 +8,7 @@
 const { Client, Collection } = require(`discord.js`);
 const fs = require('fs');
 const config = require('./config');
-// const updateYTDLPackages = require('./scripts/ytdlUpdater');
+//const updateYTDLPackages = require('./scripts/ytdlUpdater');
 
 // Utils //
 const { intents, partials } = require('./utils/intents.js');
@@ -18,11 +18,11 @@ const setupLoggers = require('./utils/setupLoggers');
 const botStartTime = Date.now();
 
 // Run YTDL packages update at startup
-// console.log(`${color.blue}[${getTimestamp()}] [STARTUP] Running package updates for music functionality${color.reset}`);
+//console.log(`${color.blue}[${getTimestamp()}] [STARTUP] Running package updates for music functionality${color.reset}`);
 // updateYTDLPackages();
 
 // Version Control //
-// const currentVersion = `${config.botVersion}`;
+const currentVersion = `${config.botVersion}`;
 
 // Boot Mode //
 require('./scripts/bootMode.js')();
