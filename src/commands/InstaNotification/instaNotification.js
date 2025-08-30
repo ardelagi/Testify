@@ -72,7 +72,6 @@ module.exports = {
                 const channel = interaction.options.getChannel('channel');
 
                 try {
-                    // Enhanced validation with fallback testing
                     await interaction.editReply({
                         content: `🔍 Validating Instagram user **${username}**...\nTesting both API modes...`
                     });
@@ -116,12 +115,11 @@ module.exports = {
                             });
                         }
                         data.InstagramUsers.push(username);
-                        data.Channel = channel.id; // Update channel in case it changed
+                        data.Channel = channel.id;
                     }
 
                     await data.save();
 
-                    // Get current API status for user
                     const currentMode = instagramApi.getCurrentMode(username);
                     const health = instagramApi.getSystemHealth();
 
@@ -183,12 +181,10 @@ module.exports = {
 
                     data.InstagramUsers = data.InstagramUsers.filter(user => user !== username);
                     
-                    // Clean up last post date
-                    data.LastPostDates.delete(username);
+                    data.deleteLastPostDate(username);
                     
                     await data.save();
 
-                    // Clean up user-specific mode if set
                     instagramApi.fallbackSystem.userSpecificModes.delete(username);
 
                     const embed = new EmbedBuilder()
@@ -238,7 +234,6 @@ module.exports = {
                     const health = instagramApi.getSystemHealth();
                     const status = instagramApi.getFallbackStatus();
 
-                    // Generate user list with modes
                     const userList = data.InstagramUsers.map(user => {
                         const userMode = instagramApi.getCurrentMode(user);
                         const modeEmoji = userMode === 'puppeteer' ? '🎭' : '📡';
@@ -286,7 +281,6 @@ module.exports = {
                         .setFooter({ text: `Tracking ${data.InstagramUsers.length} Instagram users • Check interval: 15 minutes` })
                         .setTimestamp();
 
-                    // Add warning if system health is low
                     if (health.healthScore < 70) {
                         embed.addFields({
                             name: '⚠️ System Warning',
@@ -330,7 +324,8 @@ module.exports = {
 
                     if (latestPost) {
                         const lastPostTime = new Date(latestPost.taken_at_timestamp * 1000);
-                        const lastChecked = data.LastPostDates.get(username);
+                        
+                        const lastChecked = data.getLastPostDate(username);
                         const isNewPost = !lastChecked || lastPostTime > lastChecked;
 
                         const embed = new EmbedBuilder()
@@ -367,9 +362,8 @@ module.exports = {
                             embeds: [embed] 
                         });
 
-                        // If it's a new post, update the database
                         if (isNewPost) {
-                            data.LastPostDates.set(username, lastPostTime);
+                            data.setLastPostDate(username, lastPostTime);
                             await data.save();
                         }
 
@@ -496,49 +490,6 @@ module.exports = {
                     console.error(`${color.red}[${getTimestamp()}] [INSTA_SYSTEM_INFO] Error getting system info: ${error.message}${color.reset}`);
                     await interaction.editReply({
                         content: '❌ Error retrieving system information!'
-                    });
-                }
-                break;
-            }
-
-            default: {
-                // This is the original 'check' command, enhanced
-                try {
-                    const data = await InstagramSchema.findOne({ Guild: interaction.guild.id });
-
-                    if (!data || data.InstagramUsers.length === 0) {
-                        return await interaction.editReply({
-                            content: '📋 No Instagram users are being tracked in this server!'
-                        });
-                    }
-
-                    const health = instagramApi.getSystemHealth();
-                    const userList = data.InstagramUsers.map(user => {
-                        const mode = instagramApi.getCurrentMode(user);
-                        const emoji = mode === 'puppeteer' ? '🎭' : '📡';
-                        return `${emoji} ${user}`;
-                    }).join('\n');
-
-                    const embed = new EmbedBuilder()
-                        .setAuthor({ name: `Instagram Notification Tool ${client.config.devBy}` })
-                        .setColor(client.config.embedInsta)
-                        .setTitle(`${client.user.username} Instagram Notification Status ${client.config.arrowEmoji}`)
-                        .setDescription([
-                            `**Tracked Users:**`,
-                            userList,
-                            '',
-                            `**Notification Channel:** <#${data.Channel}>`,
-                            `**System Health:** ${health.healthScore}% ${this.getHealthEmoji(health.healthScore)}`
-                        ].join('\n'))
-                        .setFooter({ text: `Tracking ${data.InstagramUsers.length} Instagram users • Health: ${health.healthScore}%` })
-                        .setTimestamp();
-
-                    await interaction.editReply({ embeds: [embed] });
-
-                } catch (error) {
-                    console.error(`${color.red}[${getTimestamp()}] [INSTA_NOTIFICATION] Error while checking instagram notifications: ${error.message}${color.reset}`);
-                    await interaction.editReply({
-                        content: '❌ There was an error while checking Instagram notifications!'
                     });
                 }
                 break;
