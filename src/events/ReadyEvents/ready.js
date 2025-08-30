@@ -5,7 +5,7 @@ const { textEffects } = require('../../utils/loggingEffects.js');
 const { asciiText } = require('../../lib/asciiText.js');
 
 module.exports = {
-    name: 'ready',
+    name: 'clientReady',
     once: true,
     async execute(client) {
 
