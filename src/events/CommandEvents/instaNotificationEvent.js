@@ -20,7 +20,6 @@ module.exports = {
                     lastRoutineLog = now;
                 }
 
-                // Periodic health monitoring
                 if (now - lastHealthCheck > 30 * 60 * 1000) { // Every 30 minutes
                     await this.performHealthCheck();
                     lastHealthCheck = now;
@@ -30,12 +29,10 @@ module.exports = {
                     const processedUsers = new Set();
                     
                     for (const username of guildData.InstagramUsers) {
-                        // Skip if already processed (avoid duplicates)
                         if (processedUsers.has(username)) continue;
                         processedUsers.add(username);
                         
                         try {
-                            // Smart delay based on current mode
                             const currentMode = instagramApi.getCurrentMode(username);
                             const delayTime = currentMode === 'puppeteer' ? 5000 : 3000; // Longer delay for Puppeteer
                             
@@ -47,12 +44,12 @@ module.exports = {
                             
                             if (latestPost) {
                                 const lastPostTime = new Date(latestPost.taken_at_timestamp * 1000);
-                                const lastChecked = guildData.LastPostDates.get(username);
+                                
+                                const lastChecked = guildData.getLastPostDate(username);
 
                                 if (!lastChecked || lastPostTime > lastChecked) {
                                     const channel = client.channels.cache.get(guildData.Channel);
                                     if (channel) {
-                                        // Enhanced embed with source information
                                         const embed = new EmbedBuilder()
                                             .setAuthor({ 
                                                 name: `${client.user.username} Instagram Post Tracker`, 
@@ -67,22 +64,19 @@ module.exports = {
                                                 text: `Posted on Instagram • Source: ${latestPost.source?.toUpperCase() || 'API'}`
                                             });
 
-                                        // Add image if available
                                         if (latestPost.display_url) {
                                             embed.setImage(latestPost.display_url);
                                         }
 
                                         await channel.send({ embeds: [embed] });
 
-                                        // Update database
-                                        guildData.LastPostDates.set(username, lastPostTime);
+                                        guildData.setLastPostDate(username, lastPostTime);
                                         await guildData.save();
 
                                         console.log(`${color.green}[${getTimestamp()}] [INSTA_NOTIFICATION] New post detected for ${username} via ${latestPost.source}${color.reset}`);
                                     }
                                 }
                             } else {
-                                // Log failed fetch attempts with mode context
                                 const currentMode = instagramApi.getCurrentMode(username);
                                 if (instagramApi.logRateLimiter.shouldLog(`fetch_failed_${username}`, 120)) {
                                     console.warn(`${color.yellow}[${getTimestamp()}] [INSTA_CHECK] No data retrieved for ${username} (mode: ${currentMode})${color.reset}`);
@@ -90,7 +84,6 @@ module.exports = {
                             }
                             
                         } catch (error) {
-                            // Enhanced error logging with fallback context
                             const currentMode = instagramApi.getCurrentMode(username);
                             if (instagramApi.logRateLimiter.shouldLog(`error_${username}`, 60)) {
                                 console.error(`${color.red}[${getTimestamp()}] [INSTA_ERROR] Error checking ${username} (mode: ${currentMode}): ${error.message}${color.reset}`);
@@ -103,17 +96,14 @@ module.exports = {
             }
         };
 
-        // Health check method
         this.performHealthCheck = async () => {
             try {
                 const health = instagramApi.getSystemHealth();
                 
-                // Log warnings for poor performance
                 if (health.healthScore < 70) {
                     console.warn(`${color.yellow}[${getTimestamp()}] [HEALTH_CHECK] Low health score: ${health.healthScore}%${color.reset}`);
                 }
                 
-                // Log mode distribution
                 const puppeteerUsers = Array.from(instagramApi.fallbackSystem.userSpecificModes.entries())
                     .filter(([_, mode]) => mode === 'puppeteer').length;
                 const rsshubUsers = Array.from(instagramApi.fallbackSystem.userSpecificModes.entries())
@@ -123,7 +113,6 @@ module.exports = {
                     console.log(`${color.cyan}[${getTimestamp()}] [HEALTH] Puppeteer: ${puppeteerUsers} users, RSSHub: ${rsshubUsers} users${color.reset}`);
                 }
                 
-                // Clean up unused Puppeteer cluster if all users are on RSSHub
                 if (health.currentMode === 'rsshub' && puppeteerUsers === 0 && health.isPuppeteerActive) {
                     console.log(`${color.yellow}[${getTimestamp()}] [OPTIMIZATION] All users on RSSHub, closing Puppeteer cluster${color.reset}`);
                     await instagramApi.closePuppeteerCluster();
@@ -134,24 +123,20 @@ module.exports = {
             }
         };
 
-        // Get embed color based on source
         this.getEmbedColor = (source) => {
             switch (source) {
-                case 'puppeteer': return '#E1306C'; // Instagram pink
-                case 'rsshub': return '#FF6B35'; // Orange for RSSHub
+                case 'puppeteer': return '#E1306C'; 
+                case 'rsshub': return '#FF6B35'; 
                 default: return client.config.embedInsta || '#E1306C';
             }
         };
 
-        // Start the monitoring interval
-        setInterval(checkInstagramPosts, 15 * 60 * 1000); // Every 15 minutes
+        setInterval(checkInstagramPosts, 15 * 60 * 1000); 
 
-        // Initial check after 1 minute
         setTimeout(() => {
             checkInstagramPosts();
         }, 60000);
 
-        // Setup graceful shutdown
         const gracefulShutdown = async (signal) => {
             console.log(`${color.yellow}[${getTimestamp()}] [SHUTDOWN] Received ${signal}, performing cleanup...${color.reset}`);
             
@@ -165,7 +150,6 @@ module.exports = {
             process.exit(0);
         };
 
-        // Register shutdown handlers
         process.once('SIGINT', () => gracefulShutdown('SIGINT'));
         process.once('SIGTERM', () => gracefulShutdown('SIGTERM'));
 
