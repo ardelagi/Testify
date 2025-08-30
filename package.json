@@ -79,5 +79,8 @@
     "nodemon": "^3.1.7",
     "typescript": "^5.6.3",
     "npm-check-updates": "^18.0.0"
+  },  
+  "overrides": {
+    "punycode": "^2.3.1"
   }
 }
